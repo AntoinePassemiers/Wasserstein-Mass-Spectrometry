@@ -2,7 +2,9 @@
 #define SPECTRUM_HPP_
 
 #include <algorithm>
+#include <functional>
 #include <vector>
+#include <numeric>
 
 
 typedef double mz_t;
@@ -19,6 +21,7 @@ public:
     Spectrum(Spectrum &other);
     void add(mz_t ratio, intensity_t intensity);
     void sort();
+    void normalize();
     size_t length() { return ratios.size(); }
     mz_t getRatio(size_t i) { return ratios[i]; }
     intensity_t getIntensity(size_t i) { return intensities[i]; }

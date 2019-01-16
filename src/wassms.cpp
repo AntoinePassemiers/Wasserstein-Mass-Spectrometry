@@ -24,6 +24,7 @@ Spectrum *loadRecord(std::string filepath) {
         }
     }
     spectrum->sort();
+    spectrum->normalize();
     return spectrum;
 }
 

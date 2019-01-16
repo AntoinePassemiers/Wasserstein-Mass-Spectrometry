@@ -14,6 +14,15 @@ void Spectrum::add(mz_t ratio, intensity_t intensity) {
     intensities.push_back(intensity);
 }
 
+void Spectrum:: normalize() {
+    intensity_t s = std::accumulate(intensities.begin(), intensities.end(), 0);
+    std::transform(
+            intensities.begin(),
+            intensities.end(),
+            intensities.begin(),
+            std::bind(std::divides<intensity_t>(), std::placeholders::_1, s));
+}
+
 void Spectrum::sort() {
     if (!sorted) {
         std::vector<int> indices(ratios.size());
@@ -25,7 +34,7 @@ void Spectrum::sort() {
                 [&](int idx1, int idx2) { return ratios[idx1] < ratios[idx2]; } );
         std::vector<mz_t> newRatios(ratios.size());
         std::vector<intensity_t> newIntensities(ratios.size());
-        for (int i = 0; i < ratios.size(); i++) {
+        for (size_t i = 0; i < ratios.size(); i++) {
             newRatios[i] = ratios[indices[i]];
             newIntensities[i] = intensities[indices[i]];
         }
