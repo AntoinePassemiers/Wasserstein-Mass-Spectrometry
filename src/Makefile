@@ -24,11 +24,14 @@ debug:  clean wassms
 
 
 # link libraries
-buildLib: spectrum.o
+buildLib: spectrum.o wasserstein.o
 	ar r libwassms.a *.o
 
 spectrum.o: spectrum.cpp
 	g++ $(CFLAGS) $(PAR) -c spectrum.cpp
+
+wasserstein.o: wasserstein.o
+	g++ $(CFLAGS) $(PAR) -c wasserstein.cpp
 
 cleanComp:
 	clear
