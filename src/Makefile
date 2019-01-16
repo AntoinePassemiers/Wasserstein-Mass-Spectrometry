@@ -1,26 +1,23 @@
 NOMEFILE = wassms.cpp
-
 CHECK = -Winline -Wall
-
 PAR = -lm -std=c++17
-
 CFLAGS = -L. -lwassms $(CHECK) $(PAR)
 
-.PHONY: all vectorized release debug cleanComp clean
+.PHONY: all vectorized release debug clean
 
-all: clean wassms
+all: clean wassms deconvms
 
-wassms: buildLib $(NOMEFILE)
-	g++ $(NOMEFILE) -o ../$@ $(CFLAGS)
+wassms: buildLib wassms.cpp
+	g++ wassms.cpp -o ../$@ $(CFLAGS)
+
+deconvms: buildLib deconvms.cpp
+	g++ deconvms.cpp -o ../$@ $(CFLAGS)
 
 release: CFLAGS += -O3
 release: clean wassms
 
 debug: CFLAGS += -g -DDEBUG  -O0
-debug:  clean wassms
-# clean
-# -g      : debug symbols
-# -DDEBUG : declare DEBUG macro
+debug: clean wassms
 
 
 # link libraries
@@ -33,14 +30,10 @@ spectrum.o: spectrum.cpp
 wasserstein.o: wasserstein.o
 	g++ $(CFLAGS) $(PAR) -c wasserstein.cpp
 
-cleanComp:
-	clear
-	-rm wassms
-	-rm libwassms.a
-
 clean:
 	clear
 	-rm wassms
+	-rm deconvms
 	-rm libwassms.a
 	-rm *.o
 	-rm *.gch
