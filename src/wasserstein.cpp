@@ -1,7 +1,7 @@
 #include "wasserstein.hpp"
 
 
-double wassersteinDistance(Spectrum *S1, Spectrum *S2) {
+double wassersteinDistance(std::unique_ptr<Spectrum> &S1, std::unique_ptr<Spectrum> &S2) {
     Spectrum N(*S1), M(*S2);
     N.sort();
     M.sort();

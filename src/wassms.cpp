@@ -1,32 +1,12 @@
 #include "spectrum.hpp"
+#include "io.hpp"
 #include "wasserstein.hpp"
 
 #include <algorithm>
 #include <iostream>
 #include <cstddef>
 #include <cstring>
-#include <fstream>
-#include <sstream>
-
-
-Spectrum *loadRecord(std::string filepath) {
-    std::ifstream record_file(filepath);
-    Spectrum *spectrum = new Spectrum();
-    std::string line;
-    while (std::getline(record_file, line)) {
-        float mz, intensity, relIntensity;
-        std::istringstream iss(line);
-
-        if (!(iss >> mz >> intensity >> relIntensity)) {
-            // Do nothing
-        } else {
-            spectrum->add(mz, intensity);
-        }
-    }
-    spectrum->sort();
-    spectrum->normalize();
-    return spectrum;
-}
+#include <memory>
 
 
 typedef struct _params {
@@ -67,8 +47,8 @@ int main(int argc, char *argv[]) {
     params pars = parseCLA(argc, argv);
     if (pars.has_parse_error) return 1;
 
-    Spectrum *spectrum1 = loadRecord(pars.filepath1);
-    Spectrum *spectrum2 = loadRecord(pars.filepath2);
+    std::unique_ptr<Spectrum> spectrum1(loadRecord(pars.filepath1));
+    std::unique_ptr<Spectrum> spectrum2(loadRecord(pars.filepath2));
 
     std::cout << "Distance: " << wassersteinDistance(spectrum1, spectrum2) << std::endl;
 

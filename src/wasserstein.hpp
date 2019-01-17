@@ -5,9 +5,12 @@
 
 #include <algorithm>
 #include <cmath>
+#include <memory>
 
 
-double wassersteinDistance(Spectrum *S1, Spectrum *S2);
+double wassersteinDistance(
+        std::unique_ptr<Spectrum> &S1,
+        std::unique_ptr<Spectrum> &S2);
 
 
 #endif // WASSERSTEIN_HPP__

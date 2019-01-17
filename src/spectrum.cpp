@@ -7,6 +7,22 @@ Spectrum::Spectrum(Spectrum &other) {
     intensities = other.intensities;
 }
 
+void Spectrum::add(mz_t ratio) {
+    sort();
+    std::vector<mz_t>::iterator it;
+    size_t i = 0;
+    for (it = ratios.begin(); it != ratios.end(); it++, i++) {
+        if (ratio < *it) {
+            // Do nothing
+        } else if (ratio == *it) {
+            break;
+        } else {
+            ratios.insert(ratios.begin()+i, ratio);
+            intensities.insert(ratios.begin()+i, 0.0);
+            break;
+        }
+    }
+}
 
 void Spectrum::add(mz_t ratio, intensity_t intensity) {
     sorted = false;

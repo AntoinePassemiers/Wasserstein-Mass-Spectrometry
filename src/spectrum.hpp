@@ -17,8 +17,12 @@ private:
     std::vector<mz_t> ratios;
     std::vector<intensity_t> intensities;
 public:
-    Spectrum() : sorted(true) {}
-    Spectrum(Spectrum &other);
+    explicit Spectrum() : sorted(true) {}
+    explicit Spectrum(Spectrum &other);
+    Spectrum(const Spectrum &other) = delete;
+    Spectrum& operator=(const Spectrum&) = delete;
+    ~Spectrum() = default;
+    void add(mz_t ratio);
     void add(mz_t ratio, intensity_t intensity);
     void sort();
     void normalize();

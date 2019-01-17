@@ -48,7 +48,7 @@ records = load_records()
 filepaths = list()
 for filepath in records.keys():
     instrument, ms_type, ion_mode = records[filepath]
-    if ms_type == 'MS' and ion_mode == 'POSITIVE' and 'ESI-QTOF' in instrument:
+    if ms_type == 'MS2' and ion_mode == 'POSITIVE' and 'ESI-QTOF' in instrument:
         filepaths.append(filepath)
 
 print(len(filepaths))
