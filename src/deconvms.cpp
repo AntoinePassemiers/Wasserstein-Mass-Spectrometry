@@ -1,6 +1,7 @@
 #include "spectrum.hpp"
 #include "io.hpp"
 #include "wasserstein.hpp"
+#include "MSD/ipm.hpp"
 
 #include <algorithm>
 #include <iostream>

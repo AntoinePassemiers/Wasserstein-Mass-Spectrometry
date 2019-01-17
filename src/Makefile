@@ -24,7 +24,7 @@ debug: clean wassms
 buildLibwassms: spectrum.o wasserstein.o io.o
 	ar r libwassms.a *.o
 
-buildLibdeconvms: spectrum.o wasserstein.o io.o
+buildLibdeconvms: spectrum.o wasserstein.o io.o MSD/ipm.o
 	ar r libdeconvms.a *.o
 
 spectrum.o: spectrum.cpp
@@ -33,8 +33,11 @@ spectrum.o: spectrum.cpp
 io.o: io.cpp
 	g++ $(CFLAGS) $(PAR) -c io.cpp
 
-wasserstein.o: wasserstein.o
+wasserstein.o: wasserstein.cpp
 	g++ $(CFLAGS) $(PAR) -c wasserstein.cpp
+
+MSD/ipm.o: MSD/ipm.cpp
+	g++ $(CFLAGS) $(PAR) -c MSD/ipm.cpp
 
 clean:
 	clear
