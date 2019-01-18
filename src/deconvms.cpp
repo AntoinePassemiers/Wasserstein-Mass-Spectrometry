@@ -1,10 +1,11 @@
 #include "spectrum.hpp"
 #include "io.hpp"
 #include "wasserstein.hpp"
-#include "MSD/ipm.hpp"
+#include "ipm.hpp"
 
 #include <algorithm>
 #include <iostream>
+#include <cassert>
 #include <cstddef>
 #include <cstring>
 #include <memory>
@@ -54,6 +55,7 @@ int main(int argc, char *argv[]) {
 
     std::unique_ptr<Spectrum> mixture(loadRecord(pars.filepath1));
     std::vector<std::unique_ptr<Spectrum>> theoreticalSpectra;
+    Spectrum ref = Spectrum();
 
     std::ifstream recordFile(pars.filepath2);
     std::string line;
@@ -67,8 +69,26 @@ int main(int argc, char *argv[]) {
             ss << pars.folder << "/" << filename;
             std::string filepath = ss.str();
             theoreticalSpectra.push_back(std::unique_ptr<Spectrum>(loadRecord(filepath)));
+            std::unique_ptr<Spectrum> &spectrum = theoreticalSpectra.back();
+            for (size_t i = 0; i < spectrum->length(); i++) ref.addRatio(spectrum->getRatio(i));
         }
     }
+    for (size_t i = 0; i < mixture->length(); i++) ref.addRatio(mixture->getRatio(i));
+
+    std::vector<std::unique_ptr<Spectrum>>::iterator it;
+    for (it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
+        std::unique_ptr<Spectrum> &spectrum = *it;
+        for (size_t i = 0; i < ref.length(); i++) spectrum->addRatio(ref.getRatio(i));
+        std::cout << spectrum->length() << std::endl;
+    }
+    for (size_t i = 0; i < ref.length(); i++) mixture->addRatio(ref.getRatio(i));
+
+    std::cout << mixture->length() << ", " << ref.length() << std::endl;
+    assert((mixture->length() == ref.length()) && (mixture->length() > 0));
+
+    std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
+    double epsilon = 1.0; // TODO
+    IpmSolution sol = interiorPointMethod(problemInstance, epsilon);
 
     std::cout << "Finished";
     return 0;

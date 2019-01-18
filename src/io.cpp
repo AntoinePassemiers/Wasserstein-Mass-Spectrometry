@@ -6,10 +6,10 @@ Spectrum *loadRecord(std::string filepath) {
     Spectrum *spectrum = new Spectrum();
     std::string line;
     while (std::getline(recordFile, line)) {
-        float mz, intensity, relIntensity;
+        double mz, intensity;
         std::istringstream iss(line);
 
-        if (!(iss >> mz >> intensity >> relIntensity)) {
+        if (!(iss >> mz >> intensity)) {
             // Do nothing
         } else {
             spectrum->add(mz, intensity);

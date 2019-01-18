@@ -18,10 +18,10 @@ typedef struct _params {
 
 
 params parse_error(params pars) {
-  std::cout << "Error. Calls to wassms must be of the form:\n" << std::endl;
-  std::cout << "\twassms <record_file_1> <record_file_2> [--thresh value]" << std::endl;
-  pars.has_parse_error = 1;
-  return pars;
+    std::cout << "Error. Calls to wassms must be of the form:\n" << std::endl;
+    std::cout << "\twassms <record_file_1> <record_file_2> [--thresh value]" << std::endl;
+    pars.has_parse_error = 1;
+    return pars;
 }
 
 

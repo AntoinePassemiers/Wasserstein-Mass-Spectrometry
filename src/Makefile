@@ -1,43 +1,50 @@
-NOMEFILE = wassms.cpp
+CC = g++
 CHECK = -Winline -Wall
 PAR = -lm -std=c++17
-CFLAGS = -L. -lwassms $(CHECK) $(PAR)
-CFLAGS += -I eigen
+CXXFLAGS = $(CHECK) $(PAR)
+WASSMS_LDFLAGS = -L. -lwassms
+DECONVMS_LDFLAGS = -L. -ldeconvms 
 
 .PHONY: all vectorized release debug clean
 
 all: clean wassms deconvms
 
-wassms: buildLibwassms wassms.cpp
-	g++ wassms.cpp -o ../$@ $(CFLAGS)
+wassms: buildLibwassms wassms.o
+	$(CC) -o ../$@ wassms.o $(CXXFLAGS) $(WASSMS_LDFLAGS)
 
-deconvms: buildLibdeconvms deconvms.cpp
-	g++ deconvms.cpp -o ../$@ $(CFLAGS)
+deconvms: buildLibdeconvms deconvms.o
+	$(CC) -o ../$@ deconvms.o $(CXXFLAGS) $(DECONVMS_LDFLAGS)
 
-release: CFLAGS += -O3
-release: clean wassms
+release: CXXFLAGS += -O3
+release: clean wassms deconvms
 
-debug: CFLAGS += -g -DDEBUG  -O0
-debug: clean wassms
+debug: CXXFLAGS += -g -O0
+debug: clean wassms deconvms
 
 # link libraries
 buildLibwassms: spectrum.o wasserstein.o io.o
 	ar r libwassms.a *.o
 
-buildLibdeconvms: spectrum.o wasserstein.o io.o MSD/ipm.o
+buildLibdeconvms: spectrum.o wasserstein.o io.o ipm.o
 	ar r libdeconvms.a *.o
 
-spectrum.o: spectrum.cpp
-	g++ $(CFLAGS) $(PAR) -c spectrum.cpp
+wassms.o: wassms.cpp
+	$(CC) $(CXXFLAGS) -c wassms.cpp
 
-io.o: io.cpp
-	g++ $(CFLAGS) $(PAR) -c io.cpp
+deconvms.o: deconvms.cpp
+	$(CC) $(CXXFLAGS) -c deconvms.cpp -Ieigen
 
-wasserstein.o: wasserstein.cpp
-	g++ $(CFLAGS) $(PAR) -c wasserstein.cpp
+spectrum.o: spectrum.cpp spectrum.hpp
+	$(CC) $(CXXFLAGS) -c spectrum.cpp
 
-MSD/ipm.o: MSD/ipm.cpp
-	g++ $(CFLAGS) $(PAR) -c MSD/ipm.cpp
+io.o: io.cpp io.hpp
+	$(CC) $(CXXFLAGS) -c io.cpp
+
+wasserstein.o: wasserstein.cpp wasserstein.hpp
+	$(CC) $(CXXFLAGS) -c wasserstein.cpp
+
+ipm.o: ipm.cpp ipm.hpp
+	$(CC) $(CXXFLAGS) -c ipm.cpp -Ieigen
 
 clean:
 	clear

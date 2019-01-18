@@ -22,15 +22,15 @@ public:
     Spectrum(const Spectrum &other) = delete;
     Spectrum& operator=(const Spectrum&) = delete;
     ~Spectrum() = default;
-    void add(mz_t ratio);
+    void addRatio(mz_t ratio);
     void add(mz_t ratio, intensity_t intensity);
     void sort();
     void normalize();
-    size_t length() { return ratios.size(); }
-    mz_t getRatio(size_t i) { return ratios[i]; }
-    intensity_t getIntensity(size_t i) { return intensities[i]; }
-    void setRatio(size_t i, mz_t value) { ratios[i] = value; }
-    void setIntensity(size_t i, intensity_t value) { intensities[i] = value; }
+    size_t length() { return this->ratios.size(); }
+    mz_t getRatio(size_t i) { return this->ratios[i]; }
+    intensity_t getIntensity(size_t i) { return this->intensities[i]; }
+    void setRatio(size_t i, mz_t value) { this->ratios[i] = value; }
+    void setIntensity(size_t i, intensity_t value) { this->intensities[i] = value; }
 };
 
 #endif // SPECTRUM_HPP_
