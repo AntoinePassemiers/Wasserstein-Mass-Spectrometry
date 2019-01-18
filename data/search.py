@@ -1,5 +1,8 @@
 import os
+import numpy as np
 import pickle
+import datetime
+import shutil
 
 
 MASSBANK_LOCATION = 'MassBank-data-master'
@@ -24,6 +27,23 @@ def parse_record_file(filepath):
     return data
 
 
+def get_info(filepath):
+    intensities = list()
+    with open(filepath, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            if len(line) > 1 and not line[0].isalpha():
+                elements = line.split()
+                if len(elements) > 1:
+                    try:
+                        intensities.append(float(elements[1]))
+                    except ValueError:
+                        pass
+
+    relint = np.median(intensities) / np.max(intensities)
+    return relint
+
+
 def load_records():
     records_filepath = 'records.pkl'
     if not os.path.isfile(records_filepath):
@@ -45,10 +65,22 @@ def load_records():
 
 
 records = load_records()
-filepaths = list()
+
+shutil.rmtree('dataset1'); os.mkdir('dataset1')
+i = 1
+for filepath in records.keys():
+    instrument, ms_type, ion_mode = records[filepath]
+    if ms_type == 'MS' and ion_mode == 'POSITIVE' and 'ESI-QTOF' in instrument:
+        shutil.copyfile(filepath, os.path.join('dataset1', '%i.txt' % i))
+        print(i)
+        i += 1
+
+shutil.rmtree('dataset2'); os.mkdir('dataset2')
+i = 1
 for filepath in records.keys():
     instrument, ms_type, ion_mode = records[filepath]
     if ms_type == 'MS2' and ion_mode == 'POSITIVE' and 'ESI-QTOF' in instrument:
-        filepaths.append(filepath)
-
-print(len(filepaths))
+        relint = get_info(filepath)
+        if abs(relint - 0.1) < 0.02:
+            shutil.copyfile(filepath, os.path.join('dataset2', '%i.txt' % i))
+            i += 1
