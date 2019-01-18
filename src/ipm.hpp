@@ -1,6 +1,7 @@
 #ifndef IPM_HPP__
 #define IPM_HPP__
 
+#include <iostream>
 #include <memory>
 #include <Eigen/Core>
 #include <Eigen/Dense>
