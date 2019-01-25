@@ -5,6 +5,7 @@
 #include <functional>
 #include <vector>
 #include <numeric>
+#include <iostream>
 
 
 typedef double mz_t;

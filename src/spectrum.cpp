@@ -40,7 +40,10 @@ void Spectrum::add(mz_t ratio, intensity_t intensity) {
 }
 
 void Spectrum:: normalize() {
-    intensity_t s = std::accumulate(this->intensities.begin(), this->intensities.end(), 0);
+    intensity_t s = std::accumulate(
+            this->intensities.begin(),
+            this->intensities.end(),
+            static_cast<intensity_t>(0.0));
     std::transform(
             this->intensities.begin(),
             this->intensities.end(),

@@ -24,10 +24,12 @@ typedef struct _problemInstance {
     Eigen::MatrixXd F;
     Eigen::VectorXd b;
     Eigen::VectorXd c;
+    Eigen::MatrixXd A;
     _problemInstance(size_t n, size_t k): n(n), k(k) {
-        F = Eigen::MatrixXd::Zero(k, n);
+        F = Eigen::MatrixXd::Zero(k, n); // TODO: sparse matrix?
         b = Eigen::VectorXd::Zero(n + k - 1);
         c = Eigen::VectorXd::Zero(2*n + k);
+        A = Eigen::MatrixXd::Zero(n+k-1, 2*n+k);
     }
 } ProblemInstance;
 
@@ -41,7 +43,7 @@ std::unique_ptr<IpmSolution> createInitialSolution(
         std::unique_ptr<ProblemInstance> &prob);
 
 
-IpmSolution interiorPointMethod(
+std::unique_ptr<IpmSolution> interiorPointMethod(
         std::unique_ptr<ProblemInstance> &prob, double epsilon);
 
 

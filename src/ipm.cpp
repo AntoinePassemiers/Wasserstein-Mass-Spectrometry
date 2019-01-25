@@ -10,6 +10,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     Eigen::MatrixXd &F = prob->F;
     Eigen::VectorXd &b = prob->b;
     Eigen::VectorXd &c = prob->c;
+    Eigen::MatrixXd &A = prob->A;
     for (size_t j = 0; j < n-1; j++) {
         b[j] = nu->getRatio(j) - nu->getRatio(j + 1);
     }
@@ -21,49 +22,62 @@ std::unique_ptr<ProblemInstance> formulateProblem(
             F(i, j) = mu[i]->getIntensity(j);
         }
     }
-    return std::unique_ptr<ProblemInstance>(prob);
-}
-
-
-std::unique_ptr<IpmSolution> createInitialSolution(std::unique_ptr<ProblemInstance> &prob) {
-    std::unique_ptr<IpmSolution> sol(new IpmSolution(prob->n, prob->k));
-    // TODO: initialize x
-    // TODO: initialize y
-    // TODO: initialize z
-    return sol;
-}
-
-
-IpmSolution interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double epsilon) {
-
-    // Find initial solution
-    std::unique_ptr<IpmSolution> initialSolution = createInitialSolution(prob);
-    IpmSolution sol = *initialSolution;
-
-    // Extract data from problem instance
-    size_t n = prob->n, k = prob->k;
-    Eigen::VectorXd b = prob->b, c = prob->c;
-    Eigen::MatrixXd F = prob->F; // TODO: sparse matrix?
-
-    // Initialize matrix A
-    Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n+k-1, 2*n+k);
     Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n).block(0, 0, n-1, n);
     A.block(0, 0, n-1, n) = -J;
     A.block(0, n, n-1, n) = -J;
     A.block(n-1, 0, k, n) = F;
     A.block(n-1, n, k, n) = -F;
     A.block(n-1, 2*n, k, k) = -Eigen::MatrixXd::Identity(k, k);
+    return std::unique_ptr<ProblemInstance>(prob);
+}
 
-    for (int t = 0; t < 5; t++) { // TODO
-        Eigen::VectorXd x = sol.x, y = sol.y, z = sol.z;
 
-        // Compute duality gap
+std::unique_ptr<IpmSolution> createInitialSolution(std::unique_ptr<ProblemInstance> &prob) {
+    std::unique_ptr<IpmSolution> sol(new IpmSolution(prob->n, prob->k));
+    size_t k = prob->k, n = prob->n;
+
+    // Initialize x
+    for (size_t i = 0; i < n-1; i++) sol->x[i] = sol->x[i+n] = prob->b[i] / 2.0;
+    sol->x[n] = 2.0 / 3.0;
+    sol->x[2*n] = 1.0 / 3.0;
+    for (size_t i = 0; i < k; i++) sol->x[2*n+i] = 1.0 / 3.0;
+
+    // Initialize y
+    Eigen::VectorXd p = Eigen::VectorXd::Constant(k, 1.0 / static_cast<float>(k));
+    Eigen::VectorXd t = Eigen::VectorXd::Ones(n-1); // TODO
+    sol->y.head(n-1) = t;
+    sol->y.tail(k) = p;
+
+    // Initialize z
+    sol->z = prob->c - prob->A.transpose() * sol->y;
+
+    return sol;
+}
+
+
+std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double epsilon) {
+
+    // Find initial solution
+    std::unique_ptr<IpmSolution> sol = createInitialSolution(prob);
+
+    // Extract data from problem instance and initial solution
+    size_t n = prob->n, k = prob->k;
+    Eigen::VectorXd b = prob->b, c = prob->c;
+    Eigen::MatrixXd F = prob->F;
+    Eigen::MatrixXd A = prob->A;
+    Eigen::VectorXd x = sol->x, y = sol->y, z = sol->z;
+
+    for (int t = 0; t < 30; t++) { // TODO
+
+        // Compute centrality (related to duality gap)
         double mu = x.dot(z) / static_cast<double>(2*n + k);
 
         // Compute feasibility gaps (primal residual and dual residual)
         // and check for epsilon-feasibility
         Eigen::VectorXd rp = b - A*x;
         Eigen::VectorXd rd = c - A.transpose()*y - z;
+        std::cout << "Iteration: " << t+1 << " - Centrality: " << mu << " - Residuals: ";
+        std::cout << rp.norm() << ", " << rd.norm() << std::endl;
         if ((rp.norm() < epsilon) && (rd.norm() < epsilon)) break;
 
         // Choose sigma

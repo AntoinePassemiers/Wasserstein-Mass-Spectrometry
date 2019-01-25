@@ -89,9 +89,11 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
     size_t k = problemInstance->k;
     double epsilon = 1.0; // TODO
-    IpmSolution sol = interiorPointMethod(problemInstance, epsilon);
-    Eigen::VectorXd p = sol.y.tail(k);
-    std::cout << "Sum of p coefficients: " << p.sum() << std::endl;
+    std::unique_ptr<IpmSolution> sol = interiorPointMethod(problemInstance, epsilon);
+    Eigen::VectorXd p = sol->y.tail(k);
+    for (size_t i = 0; i < k; i++) {
+        std::cout << "Weight of molecule " << i+1 << ": " << p[i] << std::endl;
+    }
 
     std::cout << "Finished";
     return 0;
