@@ -43,7 +43,7 @@ IpmSolution interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double e
     // Extract data from problem instance
     size_t n = prob->n, k = prob->k;
     Eigen::VectorXd b = prob->b, c = prob->c;
-    Eigen::MatrixXd F = prob->F;
+    Eigen::MatrixXd F = prob->F; // TODO: sparse matrix?
 
     // Initialize matrix A
     Eigen::MatrixXd A = Eigen::MatrixXd::Zero(n+k-1, 2*n+k);

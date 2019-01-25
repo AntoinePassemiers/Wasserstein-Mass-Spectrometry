@@ -87,8 +87,11 @@ int main(int argc, char *argv[]) {
     assert((mixture->length() == ref.length()) && (mixture->length() > 0));
 
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
+    size_t k = problemInstance->k;
     double epsilon = 1.0; // TODO
     IpmSolution sol = interiorPointMethod(problemInstance, epsilon);
+    Eigen::VectorXd p = sol.y.tail(k);
+    std::cout << "Sum of p coefficients: " << p.sum() << std::endl;
 
     std::cout << "Finished";
     return 0;
