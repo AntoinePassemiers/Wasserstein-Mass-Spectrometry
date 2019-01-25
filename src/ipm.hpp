@@ -1,6 +1,7 @@
 #ifndef IPM_HPP__
 #define IPM_HPP__
 
+#include <cstdlib>
 #include <iostream>
 #include <memory>
 #include <Eigen/Core>
@@ -27,8 +28,8 @@ typedef struct _problemInstance {
     Eigen::MatrixXd A;
     _problemInstance(size_t n, size_t k): n(n), k(k) {
         F = Eigen::MatrixXd::Zero(k, n); // TODO: sparse matrix?
-        b = Eigen::VectorXd::Zero(n + k - 1);
-        c = Eigen::VectorXd::Zero(2*n + k);
+        b = Eigen::VectorXd::Zero(n+k-1);
+        c = Eigen::VectorXd::Zero(2*n+k);
         A = Eigen::MatrixXd::Zero(n+k-1, 2*n+k);
     }
 } ProblemInstance;

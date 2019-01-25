@@ -22,6 +22,8 @@ std::unique_ptr<ProblemInstance> formulateProblem(
             F(i, j) = mu[i]->getIntensity(j);
         }
     }
+    F.col(n-1) = Eigen::VectorXd::Ones(k); // TODO?
+
     Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n).block(0, 0, n-1, n);
     A.block(0, 0, n-1, n) = -J;
     A.block(0, n, n-1, n) = -J;
@@ -63,11 +65,10 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     // Extract data from problem instance and initial solution
     size_t n = prob->n, k = prob->k;
     Eigen::VectorXd b = prob->b, c = prob->c;
-    Eigen::MatrixXd F = prob->F;
     Eigen::MatrixXd A = prob->A;
-    Eigen::VectorXd x = sol->x, y = sol->y, z = sol->z;
+    Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
 
-    for (int t = 0; t < 30; t++) { // TODO
+    for (int t = 0; t < 100; t++) { // TODO
 
         // Compute centrality (related to duality gap)
         double mu = x.dot(z) / static_cast<double>(2*n + k);
@@ -78,10 +79,10 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         Eigen::VectorXd rd = c - A.transpose()*y - z;
         std::cout << "Iteration: " << t+1 << " - Centrality: " << mu << " - Residuals: ";
         std::cout << rp.norm() << ", " << rd.norm() << std::endl;
-        if ((rp.norm() < epsilon) && (rd.norm() < epsilon)) break;
+        if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
 
         // Choose sigma
-        double sigma = 1.0; // TODO
+        double sigma = 0.1; // TODO
 
         // Solve linear system
         Eigen::MatrixXd X = x.asDiagonal();
@@ -102,5 +103,5 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         y += alphaD * dy;
     }
 
-    return sol; // TODO
+    return sol;
 }
