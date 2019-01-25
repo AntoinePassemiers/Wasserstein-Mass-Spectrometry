@@ -54,13 +54,6 @@ IpmSolution interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double e
     A.block(n-1, n, k, n) = -F;
     A.block(n-1, 2*n, k, k) = -Eigen::MatrixXd::Identity(k, k);
 
-    // Initialize linear system
-    Eigen::MatrixXd M = Eigen::MatrixXd::Zero(5*n+3*k-1, 5*n+3*k-1);
-    M.block(0, 0, n+k-1, 2*n+k) = A;
-    M.block(n+k-1, 2*n+k, 2*n+k, n+k-1) = A.transpose();
-    M.block(n+k-1, 3*n+2*k-1, 2*n+k, 2*n+k) = Eigen::MatrixXd::Identity(2*n+k, 2*n+k);
-    Eigen::VectorXd rhs = Eigen::VectorXd::Zero(5*n+3*k-1); // TODO
-
     for (int t = 0; t < 5; t++) { // TODO
         Eigen::VectorXd x = sol.x, y = sol.y, z = sol.z;
 
@@ -76,19 +69,14 @@ IpmSolution interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double e
         // Choose sigma
         double sigma = 1.0; // TODO
 
-        // Update matrix M and rhs vector
-        M.block(3*n+2*k-1, 0, 2*n+k, 2*n+k) = z.asDiagonal();
-        M.block(3*n+2*k-1, 3*n+2*k-1, 2*n+k, 2*n+k) = x.asDiagonal();
-        std::cout << x.size() << ", " << rp.size() << ", " << rd.size() << std::endl;
-        rhs.head(rp.size()) = rp;
-        rhs.segment(rp.size(), rd.size()) = rd;
-        rhs.tail(z.size()) = sigma * mu * Eigen::VectorXd::Ones(z.size()) - x.asDiagonal() * z;
-
         // Solve linear system
-        Eigen::VectorXd d = M.colPivHouseholderQr().solve(rhs);
-        Eigen::VectorXd dx = d.head(x.size());
-        Eigen::VectorXd dy = d.segment(x.size(), y.size());
-        Eigen::VectorXd dz = d.tail(z.size());
+        Eigen::MatrixXd X = x.asDiagonal();
+        Eigen::MatrixXd Zinv = z.asDiagonal().inverse();
+        Eigen::MatrixXd Sigma = A * Zinv * X * A.transpose();
+        Eigen::VectorXd r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()));
+        Eigen::VectorXd dy = Sigma.colPivHouseholderQr().solve(r);
+        Eigen::VectorXd dz = rd - A.transpose() * dy;
+        Eigen::VectorXd dx = -x + Zinv * (sigma * mu * Eigen::VectorXd::Ones(dz.size()) - X * dz);
 
         // Choose step lengths
         double alphaP = 0.5; // TODO: choose alphaP such that new x is positive
