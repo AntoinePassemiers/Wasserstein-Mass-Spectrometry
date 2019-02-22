@@ -1,3 +1,5 @@
+EIGEN_PATH = ${Eigen3_DIR}
+
 CC = g++
 CHECK = -Winline -Wall
 PAR = -lm -std=c++17
@@ -32,7 +34,7 @@ wassms.o: wassms.cpp
 	$(CC) $(CXXFLAGS) -c wassms.cpp
 
 deconvms.o: deconvms.cpp
-	$(CC) $(CXXFLAGS) -c deconvms.cpp -Ieigen
+	$(CC) $(CXXFLAGS) -c deconvms.cpp -I$(EIGEN_PATH)
 
 spectrum.o: spectrum.cpp spectrum.hpp
 	$(CC) $(CXXFLAGS) -c spectrum.cpp
@@ -44,7 +46,7 @@ wasserstein.o: wasserstein.cpp wasserstein.hpp
 	$(CC) $(CXXFLAGS) -c wasserstein.cpp
 
 ipm.o: ipm.cpp ipm.hpp
-	$(CC) $(CXXFLAGS) -c ipm.cpp -Ieigen
+	$(CC) $(CXXFLAGS) -c ipm.cpp -I$(EIGEN_PATH)
 
 clean:
 	clear

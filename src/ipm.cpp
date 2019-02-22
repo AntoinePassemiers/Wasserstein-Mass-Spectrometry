@@ -1,6 +1,33 @@
 #include "ipm.hpp"
 
 
+double findPositivityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
+    // x_i + alpha * dx_i >= 0
+    //     alpha >= -x_i / dx_i     if dx_i > 0 and x_i >= 0 -> ok since alpha >= 0
+    //     alpha <  -x_i / dx_i     if dx_i < 0 and x_i >= 0
+    double alpha = alpha0;
+    for (auto i = 0; i < x.size(); i++) {
+        double ratio = -x[i] / dx[i];
+        if (dx[i] < 0.0) {
+            if (ratio < alpha) alpha = ratio;
+        }
+    }
+    return alpha;
+}
+
+
+double findNegativityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
+    double alpha = alpha0;
+    for (auto i = 0; i < x.size(); i++) {
+        double ratio = -x[i] / dx[i];
+        if (dx[i] < 0.0) {
+            if (ratio > alpha) alpha = ratio;
+        }
+    }
+    return alpha;
+}
+
+
 std::unique_ptr<ProblemInstance> formulateProblem(
         std::vector<std::unique_ptr<Spectrum>> &mu,
         std::unique_ptr<Spectrum> &nu) {
@@ -11,18 +38,19 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     Eigen::VectorXd &b = prob->b;
     Eigen::VectorXd &c = prob->c;
     Eigen::MatrixXd &A = prob->A;
+
     for (size_t j = 0; j < n-1; j++) {
-        b[j] = nu->getRatio(j) - nu->getRatio(j + 1);
+        mz_t dj = nu->getRatio(j+1) - nu->getRatio(j);
+        b[j] = -dj;
     }
     for (size_t j = 0; j < n; j++) {
-        intensity_t g = nu->getIntensity(j);
-        c[j] = g;
-        c[j+n] = -g;
+        intensity_t gj = nu->getIntensity(j);
+        c[j] = gj;
+        c[j+n] = -gj;
         for (size_t i = 0; i < k; i++) {
             F(i, j) = mu[i]->getIntensity(j);
         }
     }
-    F.col(n-1) = Eigen::VectorXd::Ones(k); // TODO?
 
     Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n).block(0, 0, n-1, n);
     A.block(0, 0, n-1, n) = -J;
@@ -30,6 +58,11 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     A.block(n-1, 0, k, n) = F;
     A.block(n-1, n, k, n) = -F;
     A.block(n-1, 2*n, k, k) = -Eigen::MatrixXd::Identity(k, k);
+
+    // Check positive-definiteness of A
+    Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(A);
+    std::cout << "Rank of A: " << luDecomposition.rank() << " / " << A.rows() << std::endl;
+
     return std::unique_ptr<ProblemInstance>(prob);
 }
 
@@ -39,14 +72,17 @@ std::unique_ptr<IpmSolution> createInitialSolution(std::unique_ptr<ProblemInstan
     size_t k = prob->k, n = prob->n;
 
     // Initialize x
-    for (size_t i = 0; i < n-1; i++) sol->x[i] = sol->x[i+n] = prob->b[i] / 2.0;
+    for (size_t i = 0; i < n-1; i++) sol->x[i] = sol->x[i+n] = - prob->b[i] / 2.0;
     sol->x[n] = 2.0 / 3.0;
     sol->x[2*n] = 1.0 / 3.0;
     for (size_t i = 0; i < k; i++) sol->x[2*n+i] = 1.0 / 3.0;
 
     // Initialize y
     Eigen::VectorXd p = Eigen::VectorXd::Constant(k, 1.0 / static_cast<float>(k));
-    Eigen::VectorXd t = Eigen::VectorXd::Ones(n-1); // TODO
+    Eigen::VectorXd t = Eigen::VectorXd::Ones(n-1);
+    for (size_t j = 0; j < n-1; j++) {
+        t[j] += std::abs(prob->F.col(j).dot(p) - prob->c[j]);
+    }
     sol->y.head(n-1) = t;
     sol->y.tail(k) = p;
 
@@ -68,7 +104,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     Eigen::MatrixXd A = prob->A;
     Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
 
-    for (int t = 0; t < 100; t++) { // TODO
+    for (int t = 0; t < 10; t++) { // TODO
 
         // Compute centrality (related to duality gap)
         double mu = x.dot(z) / static_cast<double>(2*n + k);
@@ -81,25 +117,44 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         std::cout << rp.norm() << ", " << rd.norm() << std::endl;
         if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
 
-        // Choose sigma
-        double sigma = 0.1; // TODO
-
-        // Solve linear system
+        // Compute search direction without scaling factor
         Eigen::MatrixXd X = x.asDiagonal();
         Eigen::MatrixXd Zinv = z.asDiagonal().inverse();
         Eigen::MatrixXd Sigma = A * Zinv * X * A.transpose();
-        Eigen::VectorXd r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()));
-        Eigen::VectorXd dy = Sigma.colPivHouseholderQr().solve(r);
+        Eigen::VectorXd r = b + A * Zinv * X * rd;
+        Eigen::VectorXd dy = Sigma.inverse() * r;
         Eigen::VectorXd dz = rd - A.transpose() * dy;
-        Eigen::VectorXd dx = -x + Zinv * (sigma * mu * Eigen::VectorXd::Ones(dz.size()) - X * dz);
+        Eigen::VectorXd dx = -(x + Zinv * X * dz);
 
-        // Choose step lengths
-        double alphaP = 0.5; // TODO: choose alphaP such that new x is positive
-        double alphaD = 0.5; // TODO: choose alphaD such that new z is positive
+        // Choose step lengths while satisfying positivity constraints
+        // Choose alphaP such that new x is positive
+        // Choose alphaD such that new z is positive
+        double alphaP = 1.0, alphaD = 1.0;
+        alphaP = findPositivityConstrainedStepLength(x, dx, alphaP);
+        alphaD = findPositivityConstrainedStepLength(z, dz, alphaD);
+
+        // Compute scaling factor
+        double sigma = (z + alphaD * dz).dot(x + alphaP * dx) / z.dot(x);
+        //sigma = std::pow(sigma, 3.0);
+
+        // Compute search direction with scaling factor
+        r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()));
+        dy = Sigma.colPivHouseholderQr().solve(r);
+        dz = rd - A.transpose() * dy;
+        dx = -x + Zinv * (sigma * mu * Eigen::VectorXd::Ones(rd.size()) - X * dz);
+
+        // Choose step lengths while satisfying positivity constraints
+        double theta = 0.9;
+        alphaP = 1.0 / theta, alphaD = 1.0 / theta;
+        alphaP = findPositivityConstrainedStepLength(x, dx, alphaP);
+        alphaD = findPositivityConstrainedStepLength(z, dz, alphaD);
+        alphaP *= theta; alphaD *= theta; 
 
         // Update solution
         x += alphaP * dx;
+        x = (x.array() < 0).select(1e-20, x);
         z += alphaD * dz;
+        z = (z.array() < 0).select(1e-20, z);
         y += alphaD * dy;
     }
 

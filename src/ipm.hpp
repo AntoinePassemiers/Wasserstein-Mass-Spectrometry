@@ -35,6 +35,12 @@ typedef struct _problemInstance {
 } ProblemInstance;
 
 
+double findPositivityConstrainedStepLength(
+        Eigen::VectorXd &x,
+        Eigen::VectorXd &dx,
+        double alpha0);
+
+
 std::unique_ptr<ProblemInstance> formulateProblem(
         std::vector<std::unique_ptr<Spectrum>> &mu,
         std::unique_ptr<Spectrum> &nu);
