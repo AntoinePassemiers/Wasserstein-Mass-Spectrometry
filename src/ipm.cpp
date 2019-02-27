@@ -104,10 +104,11 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     Eigen::MatrixXd A = prob->A;
     Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
 
-    for (int t = 0; t < 10; t++) { // TODO
+for (int t = 0; t < 5; t++) { // TODO
 
+	// Centering step
         // Compute centrality (related to duality gap)
-        double mu = x.dot(z) / static_cast<double>(2*n + k);
+        double mu = x.dot(z) / static_cast<double>(x.size());
 
         // Compute feasibility gaps (primal residual and dual residual)
         // and check for epsilon-feasibility

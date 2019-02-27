@@ -20,7 +20,7 @@ typedef struct _ipmSolution {
 
 
 typedef struct _problemInstance {
-    size_t n;
+    size_t n; 
     size_t k;
     Eigen::MatrixXd F;
     Eigen::VectorXd b;
