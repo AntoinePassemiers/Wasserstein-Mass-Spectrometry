@@ -16,7 +16,8 @@ typedef struct _params {
     char *filepath1;
     char *filepath2;
     char *folder;
-    float threshold;
+    float epsilon;
+    size_t nMaxIterations;
     bool hasParseError;
 } params;
 
@@ -38,11 +39,14 @@ params parseCLA(int argc, char *argv[]) {
     pars.filepath1 = argv[1];
     pars.filepath2 = argv[2];
     pars.folder = argv[3];
+    pars.nMaxIterations = 10;
 
     for (int i = 3; i < argc; i++) {
-        if (strcmp(argv[i], "--thresh") == 0) {
-            pars.threshold = atof(argv[++i]);
-        }
+        if (strcmp(argv[i], "--eps") == 0) {
+            pars.epsilon = atof(argv[++i]);
+        } else if (strcmp(argv[i], "--niter") == 0) {
+	    pars.nMaxIterations = atof(argv[++i]);
+	}
     }
     return pars;
 }
@@ -74,7 +78,6 @@ int main(int argc, char *argv[]) {
         }
     }
     for (size_t i = 0; i < mixture->length(); i++) ref.addRatio(mixture->getRatio(i));
-
     std::vector<std::unique_ptr<Spectrum>>::iterator it;
     for (it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
         std::unique_ptr<Spectrum> &spectrum = *it;
@@ -83,13 +86,12 @@ int main(int argc, char *argv[]) {
     }
     for (size_t i = 0; i < ref.length(); i++) mixture->addRatio(ref.getRatio(i));
 
-    std::cout << mixture->length() << ", " << ref.length() << std::endl;
     assert((mixture->length() == ref.length()) && (mixture->length() > 0));
-
+    
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
     size_t k = problemInstance->k;
-    double epsilon = 1e-5; // TODO
-    std::unique_ptr<IpmSolution> sol = interiorPointMethod(problemInstance, epsilon);
+    std::unique_ptr<IpmSolution> sol = interiorPointMethod(
+		    problemInstance, pars.epsilon, pars.nMaxIterations);
     Eigen::VectorXd p = sol->y.tail(k);
     for (size_t i = 0; i < k; i++) {
         std::cout << "Weight of molecule " << i+1 << ": " << p[i] << std::endl;

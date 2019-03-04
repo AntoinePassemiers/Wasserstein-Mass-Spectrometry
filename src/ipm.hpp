@@ -4,6 +4,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <memory>
+#include <functional>
+#include <math.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
@@ -51,7 +53,7 @@ std::unique_ptr<IpmSolution> createInitialSolution(
 
 
 std::unique_ptr<IpmSolution> interiorPointMethod(
-        std::unique_ptr<ProblemInstance> &prob, double epsilon);
+        std::unique_ptr<ProblemInstance> &prob, double epsilon, size_t nMaxIterations);
 
 
 #endif // IPM_HPP__

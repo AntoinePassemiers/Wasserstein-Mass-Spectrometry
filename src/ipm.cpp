@@ -12,18 +12,7 @@ double findPositivityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &
             if (ratio < alpha) alpha = ratio;
         }
     }
-    return alpha;
-}
-
-
-double findNegativityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
-    double alpha = alpha0;
-    for (auto i = 0; i < x.size(); i++) {
-        double ratio = -x[i] / dx[i];
-        if (dx[i] < 0.0) {
-            if (ratio > alpha) alpha = ratio;
-        }
-    }
+    if (std::isnan(alpha)) alpha = 0.0;
     return alpha;
 }
 
@@ -43,12 +32,18 @@ std::unique_ptr<ProblemInstance> formulateProblem(
         mz_t dj = nu->getRatio(j+1) - nu->getRatio(j);
         b[j] = -dj;
     }
+    intensity_t gj = 0.0;
     for (size_t j = 0; j < n; j++) {
-        intensity_t gj = nu->getIntensity(j);
+        gj += nu->getIntensity(j);
         c[j] = gj;
         c[j+n] = -gj;
-        for (size_t i = 0; i < k; i++) {
-            F(i, j) = mu[i]->getIntensity(j);
+    }
+
+    for (size_t i = 0; i < k; i++) {
+	intensity_t fj = 0.0;
+	for (size_t j = 0; j < n; j++) {
+	    fj += mu[i]->getIntensity(j);
+            F(i, j) = fj;
         }
     }
 
@@ -61,7 +56,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
 
     // Check positive-definiteness of A
     Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(A);
-    std::cout << "Rank of A: " << luDecomposition.rank() << " / " << A.rows() << std::endl;
+    // TODO
 
     return std::unique_ptr<ProblemInstance>(prob);
 }
@@ -93,70 +88,92 @@ std::unique_ptr<IpmSolution> createInitialSolution(std::unique_ptr<ProblemInstan
 }
 
 
-std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double epsilon) {
+std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double epsilon, size_t nMaxIterations) {
+
+    std::function<Eigen::VectorXd (Eigen::VectorXd)> nantonumVec = [](Eigen::VectorXd x) {
+        return (x.array() != x.array()).select(0.0, x);
+    };
+
+    std::function<Eigen::MatrixXd (Eigen::MatrixXd)> nantonumMat = [](Eigen::MatrixXd x) {
+        return (x.array() != x.array()).select(0.0, x);
+    };
 
     // Find initial solution
     std::unique_ptr<IpmSolution> sol = createInitialSolution(prob);
 
     // Extract data from problem instance and initial solution
-    size_t n = prob->n, k = prob->k;
     Eigen::VectorXd b = prob->b, c = prob->c;
     Eigen::MatrixXd A = prob->A;
     Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
 
-for (int t = 0; t < 5; t++) { // TODO
+    for (size_t t = 0; t < nMaxIterations; t++) {
 
-	// Centering step
-        // Compute centrality (related to duality gap)
-        double mu = x.dot(z) / static_cast<double>(x.size());
-
-        // Compute feasibility gaps (primal residual and dual residual)
-        // and check for epsilon-feasibility
-        Eigen::VectorXd rp = b - A*x;
-        Eigen::VectorXd rd = c - A.transpose()*y - z;
-        std::cout << "Iteration: " << t+1 << " - Centrality: " << mu << " - Residuals: ";
-        std::cout << rp.norm() << ", " << rd.norm() << std::endl;
-        if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
-
-        // Compute search direction without scaling factor
         Eigen::MatrixXd X = x.asDiagonal();
-        Eigen::MatrixXd Zinv = z.asDiagonal().inverse();
-        Eigen::MatrixXd Sigma = A * Zinv * X * A.transpose();
-        Eigen::VectorXd r = b + A * Zinv * X * rd;
-        Eigen::VectorXd dy = Sigma.inverse() * r;
-        Eigen::VectorXd dz = rd - A.transpose() * dy;
-        Eigen::VectorXd dx = -(x + Zinv * X * dz);
+	Eigen::MatrixXd Z = z.asDiagonal();
+        Eigen::MatrixXd Zinv = Z.inverse();
 
-        // Choose step lengths while satisfying positivity constraints
+        // -- PREDICTOR STEP (AFFINE SCALING) --
+	
+	// Compute feasibility gaps (primal residual and dual residual)
+	Eigen::MatrixXd SigmaInv = (A * Zinv * X * A.transpose()).inverse(); // TODO: faster
+	Eigen::VectorXd rp = b - A * x;
+        Eigen::VectorXd rd = c - A.transpose() * y - z;
+
+	rp = nantonumVec(rp); rd = nantonumVec(rd);
+
+	Eigen::VectorXd r = b + A * Zinv * X * rd;
+	Eigen::VectorXd dyAff = SigmaInv * r;
+	dyAff = nantonumVec(dyAff);
+	Eigen::VectorXd dzAff = rd - A.transpose() * dyAff;
+	dzAff = nantonumVec(dzAff);
+	Eigen::VectorXd dxAff = -x - Zinv * X * dzAff;
+	dxAff = nantonumVec(dxAff);
+
+	// Compute centrality (duality measure)
+        double mu = x.dot(z) / static_cast<double>(x.size());
+	if (std::isnan(mu)) mu = 0.0;
+
+        // Choose step lengths while satisfying positivity constraints:
         // Choose alphaP such that new x is positive
         // Choose alphaD such that new z is positive
-        double alphaP = 1.0, alphaD = 1.0;
-        alphaP = findPositivityConstrainedStepLength(x, dx, alphaP);
-        alphaD = findPositivityConstrainedStepLength(z, dz, alphaD);
+        double alphaP = findPositivityConstrainedStepLength(x, dxAff, 1.0);
+        double alphaD = findPositivityConstrainedStepLength(z, dzAff, 1.0);
 
-        // Compute scaling factor
-        double sigma = (z + alphaD * dz).dot(x + alphaP * dx) / z.dot(x);
-        //sigma = std::pow(sigma, 3.0);
+        // Compute centering parameter
+	double muAff = (x + alphaP*dxAff).dot(z + alphaD*dzAff) / static_cast<double>(x.size());
+        double sigma = std::pow(muAff / mu, 3.0);
+	if (std::isnan(sigma)) sigma = 0.0;
 
-        // Compute search direction with scaling factor
-        r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()));
-        dy = Sigma.colPivHouseholderQr().solve(r);
-        dz = rd - A.transpose() * dy;
-        dx = -x + Zinv * (sigma * mu * Eigen::VectorXd::Ones(rd.size()) - X * dz);
+	// -- CENTER-CORRECTOR STEP (AGGREGATED SYSTEM)
 
-        // Choose step lengths while satisfying positivity constraints
-        double theta = 0.9;
-        alphaP = 1.0 / theta, alphaD = 1.0 / theta;
-        alphaP = findPositivityConstrainedStepLength(x, dx, alphaP);
-        alphaD = findPositivityConstrainedStepLength(z, dz, alphaD);
-        alphaP *= theta; alphaD *= theta; 
+	// Check the epsilon-feasibility of current solution
+        std::cout << "Iteration: " << t+1 << " - Centrality: " << mu << " - Residuals: ";
+	std::cout << rp.norm() << ", " << rd.norm() << std::endl;
+	std::cout << "\talphaP: " << alphaP << " - alphaD: " << alphaD << " - sigma: ";
+	std::cout << sigma << std::endl;
+        if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
+
+	r = A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()) + \
+			dxAff.asDiagonal() * dzAff) + b;
+	Eigen::VectorXd dy = SigmaInv * r;
+	dy = nantonumVec(dy);
+	Eigen::VectorXd dz = rd - A.transpose() * dy;
+	dz = nantonumVec(dz);
+	Eigen::VectorXd dx = -x + Zinv * (sigma * mu * Eigen::VectorXd::Ones(dz.size()) - \
+			X * dz - dxAff.asDiagonal() * dzAff);
+	dx = nantonumVec(dx);
+
+	double theta = 0.9;
+        alphaP = findPositivityConstrainedStepLength(x, dx, 1.0 / theta) * theta;
+        alphaD = findPositivityConstrainedStepLength(z, dz, 1.0 / theta) * theta;
 
         // Update solution
         x += alphaP * dx;
-        x = (x.array() < 0).select(1e-20, x);
+        x = nantonumVec((x.array() < 0).select(1e-20, x));
         z += alphaD * dz;
-        z = (z.array() < 0).select(1e-20, z);
+        z = nantonumVec((z.array() < 0).select(1e-20, z));
         y += alphaD * dy;
+	y = nantonumVec(y);
     }
 
     return sol;
