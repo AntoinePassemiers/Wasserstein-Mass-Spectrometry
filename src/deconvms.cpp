@@ -82,7 +82,6 @@ int main(int argc, char *argv[]) {
     for (it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
         std::unique_ptr<Spectrum> &spectrum = *it;
         for (size_t i = 0; i < ref.length(); i++) spectrum->addRatio(ref.getRatio(i));
-        std::cout << spectrum->length() << std::endl;
     }
     for (size_t i = 0; i < ref.length(); i++) mixture->addRatio(ref.getRatio(i));
 

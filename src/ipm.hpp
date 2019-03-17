@@ -1,6 +1,7 @@
 #ifndef IPM_HPP__
 #define IPM_HPP__
 
+#include <cassert>
 #include <cstdlib>
 #include <iostream>
 #include <memory>
@@ -41,6 +42,18 @@ double findPositivityConstrainedStepLength(
         Eigen::VectorXd &x,
         Eigen::VectorXd &dx,
         double alpha0);
+
+
+bool isFeasible(
+        std::unique_ptr<IpmSolution> &sol,
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon);
+
+
+bool satisfiesKKTConditions(
+        std::unique_ptr<IpmSolution> &sol,
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon);
 
 
 std::unique_ptr<ProblemInstance> formulateProblem(
