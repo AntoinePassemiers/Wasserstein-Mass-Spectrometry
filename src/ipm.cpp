@@ -164,8 +164,8 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         double alphaD = findPositivityConstrainedStepLength(z, dzAff, 1.0);
 
         // Compute centering parameter
-        double muAff = (x + alphaP*dxAff).dot(z + alphaP*dzAff) / static_cast<double>(x.size());
-    	// double muAff = (x + alphaP*dxAff).dot(z + alphaD*dzAff) / static_cast<double>(x.size());
+        // double muAff = (x + alphaP*dxAff).dot(z + alphaP*dzAff) / static_cast<double>(x.size());
+    	double muAff = (x + alphaP*dxAff).dot(z + alphaD*dzAff) / static_cast<double>(x.size());
         double sigma = std::pow(muAff / mu, 3.0);
     	if (std::isnan(sigma)) sigma = 0.0;
 
@@ -178,7 +178,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
 
         Eigen::VectorXd correction = dxAff.asDiagonal() * dzAff;
 
-    	r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()));
+    	r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()) - correction);
     	Eigen::VectorXd dy = SigmaInv * r;
     	dy = nantonumVec(dy);
     	Eigen::VectorXd dz = rd - A.transpose() * dy;
@@ -187,13 +187,11 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     			X * dz - correction);
     	dx = nantonumVec(dx);
 
-    	double theta = 0.9;
-        alphaP = findPositivityConstrainedStepLength(x, dx, 1.0 / theta) * theta;
-        alphaD = findPositivityConstrainedStepLength(z, dz, 1.0 / theta) * theta;
-        /**
+    	double eta = 0.9; // TODO: increase eta at each iteration -> 1.0
         alphaP = findPositivityConstrainedStepLength(x, dx, 1.0);
         alphaD = findPositivityConstrainedStepLength(z, dz, 1.0);
-        */
+        alphaP = std::min(1.0, eta * alphaP);
+        alphaD = std::min(1.0, eta * alphaD);
 
         std::cout << "\talphaP: " << alphaP << " - alphaD: " << alphaD << " - sigma: ";
         std::cout << sigma << std::endl;
