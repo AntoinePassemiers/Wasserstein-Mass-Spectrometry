@@ -140,13 +140,13 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         // -- PREDICTOR STEP (AFFINE SCALING) --
 	
         // Compute feasibility gaps (primal residual and dual residual)
-        Eigen::MatrixXd SigmaInv = (A * Zinv * X * A.transpose()).inverse(); // TODO: faster
         Eigen::VectorXd rp = b - A * x;
         Eigen::VectorXd rd = c - A.transpose() * y - z;
     	rp = nantonumVec(rp); rd = nantonumVec(rd);
 
+        Eigen::ColPivHouseholderQR<Eigen::MatrixXd> SigmaDecomposition(A * (Zinv * X) * A.transpose());
     	Eigen::VectorXd r = b + A * Zinv * X * rd;
-    	Eigen::VectorXd dyAff = SigmaInv * r;
+    	Eigen::VectorXd dyAff = SigmaDecomposition.solve(r);
     	dyAff = nantonumVec(dyAff);
     	Eigen::VectorXd dzAff = rd - A.transpose() * dyAff;
     	dzAff = nantonumVec(dzAff);
@@ -174,17 +174,17 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     	// Check the epsilon-feasibility of current solution
         std::cout << "Iteration: " << t+1 << " - Centrality: " << mu << " - Residuals: ";
     	std::cout << rp.norm() << ", " << rd.norm() << std::endl;
+        std::cout << "\tObjectives: " << y.dot(b) << " <= " << x.dot(c) << std::endl;
         if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
 
         Eigen::VectorXd correction = dxAff.asDiagonal() * dzAff;
 
-    	r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()) - correction);
-    	Eigen::VectorXd dy = SigmaInv * r;
+    	r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()) + correction);
+    	Eigen::VectorXd dy = SigmaDecomposition.solve(r);
     	dy = nantonumVec(dy);
     	Eigen::VectorXd dz = rd - A.transpose() * dy;
     	dz = nantonumVec(dz);
-    	Eigen::VectorXd dx = -x + Zinv * (sigma * mu * Eigen::VectorXd::Ones(dz.size()) - \
-    			X * dz - correction);
+    	Eigen::VectorXd dx = -x + Zinv * (-X * dz + sigma * mu * Eigen::VectorXd::Ones(dz.size()) - correction);
     	dx = nantonumVec(dx);
 
     	double eta = 0.9; // TODO: increase eta at each iteration -> 1.0
@@ -194,7 +194,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         alphaD = std::min(1.0, eta * alphaD);
 
         std::cout << "\talphaP: " << alphaP << " - alphaD: " << alphaD << " - sigma: ";
-        std::cout << sigma << std::endl;
+        std::cout << sigma << "\n" << std::endl;
 
         // Update solution
         x += alphaP * dx;
