@@ -124,6 +124,8 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     std::unique_ptr<IpmSolution> sol = createInitialSolution(prob);
     assert(isFeasible(sol, prob, 1e-5)); // TODO
 
+    LDUDecomposition sigmaDecomposition(prob->n, prob->k);
+
     // Extract data from problem instance and initial solution
     Eigen::VectorXd b = prob->b, c = prob->c;
     Eigen::MatrixXd A = prob->A;
@@ -134,8 +136,10 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         // assert(isFeasible(sol, prob, 1e-5)); // TODO
 
         Eigen::MatrixXd X = x.asDiagonal();
-        Eigen::MatrixXd Z = z.asDiagonal();
-        Eigen::MatrixXd Zinv = (1.0 / z.array()).matrix().asDiagonal().inverse();
+        Eigen::VectorXd zinv = (1.0 / z.array()).matrix();
+        Eigen::VectorXd zinvx = x.cwiseQuotient(z);
+        Eigen::MatrixXd ZinvX = zinvx.asDiagonal();
+        Eigen::VectorXd _1 = Eigen::VectorXd::Ones(z.size());
 
         // -- PREDICTOR STEP (AFFINE SCALING) --
 	
@@ -144,13 +148,13 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         Eigen::VectorXd rd = c - A.transpose() * y - z;
     	rp = nantonumVec(rp); rd = nantonumVec(rd);
 
-        Eigen::ColPivHouseholderQR<Eigen::MatrixXd> SigmaDecomposition(A * (Zinv * X) * A.transpose());
-    	Eigen::VectorXd r = b + A * Zinv * X * rd;
-    	Eigen::VectorXd dyAff = SigmaDecomposition.solve(r);
+        sigmaDecomposition.factorize(A, zinvx);
+    	Eigen::VectorXd r = b + A * zinvx.cwiseProduct(rd);
+    	Eigen::VectorXd dyAff = sigmaDecomposition.solve(r);
     	dyAff = nantonumVec(dyAff);
     	Eigen::VectorXd dzAff = rd - A.transpose() * dyAff;
     	dzAff = nantonumVec(dzAff);
-    	Eigen::VectorXd dxAff = -x - Zinv * X * dzAff;
+    	Eigen::VectorXd dxAff = -x - zinvx.cwiseProduct(dzAff);
     	dxAff = nantonumVec(dxAff);
 
         // Compute centrality (duality measure)
@@ -164,8 +168,8 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         double alphaD = findPositivityConstrainedStepLength(z, dzAff, 1.0);
 
         // Compute centering parameter
-        // double muAff = (x + alphaP*dxAff).dot(z + alphaP*dzAff) / static_cast<double>(x.size());
-    	double muAff = (x + alphaP*dxAff).dot(z + alphaD*dzAff) / static_cast<double>(x.size());
+        // double muAff = (x + alphaP * dxAff).dot(z + alphaP * dzAff) / static_cast<double>(x.size());
+    	double muAff = (x + alphaP * dxAff).dot(z + alphaD * dzAff) / static_cast<double>(x.size());
         double sigma = std::pow(muAff / mu, 3.0);
     	if (std::isnan(sigma)) sigma = 0.0;
 
@@ -179,12 +183,12 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
 
         Eigen::VectorXd correction = dxAff.asDiagonal() * dzAff;
 
-    	r = b + A * Zinv * (X * rd - sigma * mu * Eigen::VectorXd::Ones(rd.size()) + correction);
-    	Eigen::VectorXd dy = SigmaDecomposition.solve(r);
+    	r = b + A * (zinvx.cwiseProduct(rd) - zinv.cwiseProduct(sigma * mu * _1 + correction));
+    	Eigen::VectorXd dy = sigmaDecomposition.solve(r);
     	dy = nantonumVec(dy);
     	Eigen::VectorXd dz = rd - A.transpose() * dy;
     	dz = nantonumVec(dz);
-    	Eigen::VectorXd dx = -x + Zinv * (-X * dz + sigma * mu * Eigen::VectorXd::Ones(dz.size()) - correction);
+    	Eigen::VectorXd dx = -x + (-zinvx.cwiseProduct(dz) + zinv.cwiseProduct(sigma * mu * _1 - correction));
     	dx = nantonumVec(dx);
 
     	double eta = 0.9; // TODO: increase eta at each iteration -> 1.0
