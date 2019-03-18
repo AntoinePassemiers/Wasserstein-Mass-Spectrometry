@@ -135,7 +135,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
 
         Eigen::MatrixXd X = x.asDiagonal();
         Eigen::MatrixXd Z = z.asDiagonal();
-        Eigen::MatrixXd Zinv = Z.inverse();
+        Eigen::MatrixXd Zinv = (1.0 / z.array()).matrix().asDiagonal().inverse();
 
         // -- PREDICTOR STEP (AFFINE SCALING) --
 	

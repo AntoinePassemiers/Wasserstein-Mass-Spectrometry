@@ -11,6 +11,7 @@
 #include <Eigen/Dense>
 
 #include "spectrum.hpp"
+#include "ldu.hpp"
 
 
 typedef struct _ipmSolution {

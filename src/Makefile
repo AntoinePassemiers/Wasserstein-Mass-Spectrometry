@@ -27,7 +27,7 @@ debug: clean wassms deconvms
 buildLibwassms: spectrum.o wasserstein.o io.o
 	ar r libwassms.a *.o
 
-buildLibdeconvms: spectrum.o wasserstein.o io.o ipm.o
+buildLibdeconvms: spectrum.o wasserstein.o io.o ipm.o ldu.o
 	ar r libdeconvms.a *.o
 
 wassms.o: wassms.cpp
@@ -47,6 +47,9 @@ wasserstein.o: wasserstein.cpp wasserstein.hpp
 
 ipm.o: ipm.cpp ipm.hpp
 	$(CC) $(CXXFLAGS) -c ipm.cpp -I$(EIGEN_PATH)
+
+ldu.o: ldu.cpp ldu.hpp
+	$(CC) $(CXXFLAGS) -c ldu.cpp -I$(EIGEN_PATH)
 
 clean:
 	clear
