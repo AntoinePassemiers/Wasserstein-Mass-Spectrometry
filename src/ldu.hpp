@@ -1,7 +1,6 @@
 #ifndef LDU_HPP__
 #define LDU_HPP__
 
-#include <iostream>
 #include <Eigen/Core>
 #include <Eigen/Dense>
 
@@ -15,6 +14,7 @@ private:
     Eigen::VectorXd h3;
     Eigen::MatrixXd F;
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> M2Decomposition;
+    Eigen::ColPivHouseholderQR<Eigen::MatrixXd> SigmaDecomposition; // FIXME
 public:
     LDUDecomposition(size_t n, size_t k): n(n), k(k) {}
     void factorize(Eigen::MatrixXd A, Eigen::VectorXd h);

@@ -3,6 +3,7 @@
 
 void LDUDecomposition::factorize(Eigen::MatrixXd A, Eigen::VectorXd h) {
     
+    /**
     Eigen::VectorXd h1 = h.head(this->n);
     Eigen::VectorXd h2 = h.segment(this->n, this->n);
     this->kinv = (1.0 / (h1 + h2).array()).matrix();
@@ -17,11 +18,14 @@ void LDUDecomposition::factorize(Eigen::MatrixXd A, Eigen::VectorXd h) {
     Eigen::MatrixXd H3 = this->h3.asDiagonal();
     Eigen::MatrixXd M2 = this->F * G * this->F.transpose() + H3;
     this->M2Decomposition = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(M2);
+    */
+    this->SigmaDecomposition = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(A * h.asDiagonal() * A.transpose());
 }
 
 
 Eigen::VectorXd LDUDecomposition::solve(Eigen::VectorXd r) {
 
+    /**
     Eigen::VectorXd r1 = r.head(this->n - 1);
     Eigen::VectorXd r2 = r.tail(this->k);
 
@@ -41,6 +45,8 @@ Eigen::VectorXd LDUDecomposition::solve(Eigen::VectorXd r) {
     Eigen::VectorXd v3 = Eigen::VectorXd(this->n + this->k - 1);
     v3.head(this->n - 1) = (this->kinv.asDiagonal() * this->F.transpose() * v2.tail(this->k)).head(this->n - 1);
     v3.tail(this->k) = v2.tail(this->k);
+    */
+    Eigen::VectorXd v3 = SigmaDecomposition.solve(r);
 
     return v3;
 }

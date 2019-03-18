@@ -72,11 +72,12 @@ int main(int argc, char *argv[]) {
             std::stringstream ss;
             ss << pars.folder << "/" << filename;
             std::string filepath = ss.str();
-            theoreticalSpectra.push_back(std::unique_ptr<Spectrum>(loadRecord(filepath)));
-            std::unique_ptr<Spectrum> &spectrum = theoreticalSpectra.back();
+            Spectrum *spectrum = loadRecord(filepath);
+            theoreticalSpectra.push_back(std::unique_ptr<Spectrum>(spectrum));
             for (size_t i = 0; i < spectrum->length(); i++) ref.addRatio(spectrum->getRatio(i));
         }
     }
+
     for (size_t i = 0; i < mixture->length(); i++) ref.addRatio(mixture->getRatio(i));
     std::vector<std::unique_ptr<Spectrum>>::iterator it;
     for (it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
@@ -89,6 +90,7 @@ int main(int argc, char *argv[]) {
     
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
     size_t k = problemInstance->k;
+
     std::unique_ptr<IpmSolution> sol = interiorPointMethod(
 		    problemInstance, pars.epsilon, pars.nMaxIterations);
     Eigen::VectorXd p = sol->y.tail(k);

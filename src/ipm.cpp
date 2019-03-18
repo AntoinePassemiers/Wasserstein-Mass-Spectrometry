@@ -116,10 +116,6 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         return (x.array() != x.array()).select(0.0, x);
     };
 
-    std::function<Eigen::MatrixXd (Eigen::MatrixXd)> nantonumMat = [](Eigen::MatrixXd x) {
-        return (x.array() != x.array()).select(0.0, x);
-    };
-
     // Find initial solution
     std::unique_ptr<IpmSolution> sol = createInitialSolution(prob);
     assert(isFeasible(sol, prob, 1e-5)); // TODO
@@ -130,6 +126,8 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     Eigen::VectorXd b = prob->b, c = prob->c;
     Eigen::MatrixXd A = prob->A;
     Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
+
+    double eta = 0.9;
 
     for (size_t t = 0; t < nMaxIterations; t++) {
 
@@ -146,8 +144,11 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         // Compute feasibility gaps (primal residual and dual residual)
         Eigen::VectorXd rp = b - A * x;
         Eigen::VectorXd rd = c - A.transpose() * y - z;
-    	rp = nantonumVec(rp); rd = nantonumVec(rd);
 
+        // Compute centrality (duality measure)
+        double mu = x.dot(z) / static_cast<double>(x.size());
+
+        // Compute affine scaling direction
         sigmaDecomposition.factorize(A, zinvx);
     	Eigen::VectorXd r = b + A * zinvx.cwiseProduct(rd);
     	Eigen::VectorXd dyAff = sigmaDecomposition.solve(r);
@@ -156,10 +157,6 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     	dzAff = nantonumVec(dzAff);
     	Eigen::VectorXd dxAff = -x - zinvx.cwiseProduct(dzAff);
     	dxAff = nantonumVec(dxAff);
-
-        // Compute centrality (duality measure)
-        double mu = x.dot(z) / static_cast<double>(x.size());
-        if (std::isnan(mu)) mu = 0.0;
 
         // Choose step lengths while satisfying positivity constraints:
         // Choose alphaP such that new x is positive
@@ -181,30 +178,28 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         std::cout << "\tObjectives: " << y.dot(b) << " <= " << x.dot(c) << std::endl;
         if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
 
-        Eigen::VectorXd correction = dxAff.asDiagonal() * dzAff;
+        Eigen::VectorXd correction = dxAff.cwiseProduct(dzAff);
 
-    	r = b + A * (zinvx.cwiseProduct(rd) - zinv.cwiseProduct(sigma * mu * _1 + correction));
+    	r = b + A * (zinvx.cwiseProduct(rd) - zinv.cwiseProduct(sigma * mu * _1 - correction));
     	Eigen::VectorXd dy = sigmaDecomposition.solve(r);
-    	dy = nantonumVec(dy);
     	Eigen::VectorXd dz = rd - A.transpose() * dy;
-    	dz = nantonumVec(dz);
-    	Eigen::VectorXd dx = -x + (-zinvx.cwiseProduct(dz) + zinv.cwiseProduct(sigma * mu * _1 - correction));
-    	dx = nantonumVec(dx);
+    	Eigen::VectorXd dx = -x - zinvx.cwiseProduct(dz) + zinv.cwiseProduct(sigma * mu * _1 - correction);
 
-    	double eta = 0.9; // TODO: increase eta at each iteration -> 1.0
+    	std::min(eta, 1.0);
         alphaP = findPositivityConstrainedStepLength(x, dx, 1.0);
         alphaD = findPositivityConstrainedStepLength(z, dz, 1.0);
         alphaP = std::min(1.0, eta * alphaP);
         alphaD = std::min(1.0, eta * alphaD);
+        eta *= 1.001;
 
         std::cout << "\talphaP: " << alphaP << " - alphaD: " << alphaD << " - sigma: ";
         std::cout << sigma << "\n" << std::endl;
 
         // Update solution
         x += alphaP * dx;
-        x = nantonumVec((x.array() < 0).select(1e-20, x));
+        x = nantonumVec((x.array() < 1e-20).select(1e-20, x));
         z += alphaD * dz;
-        z = nantonumVec((z.array() < 0).select(1e-20, z));
+        z = nantonumVec((z.array() < 1e-20).select(1e-20, z));
         y += alphaD * dy;
         y = nantonumVec(y);
     }

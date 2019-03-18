@@ -31,7 +31,7 @@ typedef struct _problemInstance {
     Eigen::VectorXd c;
     Eigen::MatrixXd A;
     _problemInstance(size_t n, size_t k): n(n), k(k) {
-        F = Eigen::MatrixXd::Zero(k, n); // TODO: sparse matrix?
+        F = Eigen::MatrixXd::Zero(k, n);
         b = Eigen::VectorXd::Zero(n+k-1);
         c = Eigen::VectorXd::Zero(2*n+k);
         A = Eigen::MatrixXd::Zero(n+k-1, 2*n+k);
