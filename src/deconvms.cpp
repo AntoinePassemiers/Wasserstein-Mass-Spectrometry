@@ -59,7 +59,6 @@ int main(int argc, char *argv[]) {
 
     std::unique_ptr<Spectrum> mixture(loadRecord(pars.filepath1));
     std::vector<std::unique_ptr<Spectrum>> theoreticalSpectra;
-    Spectrum ref = Spectrum();
 
     std::ifstream recordFile(pars.filepath2);
     std::string line;
@@ -74,19 +73,16 @@ int main(int argc, char *argv[]) {
             std::string filepath = ss.str();
             Spectrum *spectrum = loadRecord(filepath);
             theoreticalSpectra.push_back(std::unique_ptr<Spectrum>(spectrum));
-            for (size_t i = 0; i < spectrum->length(); i++) ref.addRatio(spectrum->getRatio(i));
+            mixture->addKeys(*spectrum);
         }
     }
 
-    for (size_t i = 0; i < mixture->length(); i++) ref.addRatio(mixture->getRatio(i));
-    std::vector<std::unique_ptr<Spectrum>>::iterator it;
-    for (it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
+    for (auto it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
         std::unique_ptr<Spectrum> &spectrum = *it;
-        for (size_t i = 0; i < ref.length(); i++) spectrum->addRatio(ref.getRatio(i));
+        spectrum->addKeys(*mixture);
+        std::cout << mixture->size() << ", " << spectrum->size() << std::endl;
+        assert(mixture->size() == spectrum->size());
     }
-    for (size_t i = 0; i < ref.length(); i++) mixture->addRatio(ref.getRatio(i));
-
-    assert((mixture->length() == ref.length()) && (mixture->length() > 0));
     
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
     size_t k = problemInstance->k;

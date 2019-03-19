@@ -12,10 +12,9 @@ Spectrum *loadRecord(std::string filepath) {
         if (!(iss >> mz >> intensity)) {
             // Do nothing
         } else {
-            spectrum->add(mz, intensity);
+            (*spectrum)[mz] = intensity;
         }
     }
-    spectrum->sort();
     spectrum->normalize();
     return spectrum;
 }

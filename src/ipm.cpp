@@ -41,7 +41,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
         std::vector<std::unique_ptr<Spectrum>> &mu,
         std::unique_ptr<Spectrum> &nu) {
 
-    size_t k = mu.size(), n = nu->length();
+    size_t k = mu.size(), n = nu->size();
     ProblemInstance *prob = new ProblemInstance(n, k);
     Eigen::MatrixXd &F = prob->F;
     Eigen::VectorXd &b = prob->b;
@@ -49,8 +49,9 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     Eigen::MatrixXd &A = prob->A;
 
     Eigen::VectorXd d = Eigen::VectorXd::Zero(n-1);
-    for (size_t j = 0; j < n-1; j++) {
-        d[j] = nu->getRatio(j+1) - nu->getRatio(j);
+    int j = 0;
+    for (auto it = nu->begin(); it != std::prev(nu->end(), 1); it++) {
+        d[j++] = std::next(it, 1)->first - it->first;
     }
     b.head(n-1) = -d;
     b.tail(k) = Eigen::VectorXd::Zero(k);
@@ -58,9 +59,10 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     // Compute cdf of empirical spectrum
     Eigen::VectorXd g = Eigen::VectorXd::Zero(n);
     intensity_t gj = 0.0;
-    for (size_t j = 0; j < n; j++) {
-        gj += nu->getIntensity(j);
-        g[j] = gj;
+    j = 0;
+    for (auto it = nu->begin(); it != nu->end(); it++) {
+        gj += it->second;
+        g[j++] = gj;
     }
     c.head(n) = g;
     c.segment(n, n) = -g;
@@ -69,9 +71,10 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     // Compute cdfs of theoretical spectra
     for (size_t i = 0; i < k; i++) {
     	intensity_t fj = 0.0;
-    	for (size_t j = 0; j < n; j++) {
-            fj += mu[i]->getIntensity(j);
-            F(i, j) = fj;
+        j = 0;
+    	for (auto it = mu[i]->begin(); it != mu[i]->end(); it++) {
+            fj += it->second;
+            F(i, j++) = fj;
         }
     }
 

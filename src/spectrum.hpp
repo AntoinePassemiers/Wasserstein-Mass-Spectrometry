@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <functional>
+#include <map>
 #include <vector>
 #include <numeric>
 #include <iostream>
@@ -14,24 +15,22 @@ typedef double intensity_t;
 
 class Spectrum {
 private:
-    bool sorted;
-    std::vector<mz_t> ratios;
-    std::vector<intensity_t> intensities;
+    std::map<mz_t, intensity_t> peaks;
+
 public:
-    explicit Spectrum() : sorted(true) {}
-    explicit Spectrum(Spectrum &other);
+    explicit Spectrum(): peaks() {}
+    explicit Spectrum(Spectrum &other): peaks(other.peaks) {}
     Spectrum(const Spectrum &other) = delete;
     Spectrum& operator=(const Spectrum&) = delete;
     ~Spectrum() = default;
-    void addRatio(mz_t ratio);
-    void add(mz_t ratio, intensity_t intensity);
-    void sort();
+
+    intensity_t& operator[](const mz_t key);
+
     void normalize();
-    size_t length() { return this->ratios.size(); }
-    mz_t getRatio(size_t i) { return this->ratios[i]; }
-    intensity_t getIntensity(size_t i) { return this->intensities[i]; }
-    void setRatio(size_t i, mz_t value) { this->ratios[i] = value; }
-    void setIntensity(size_t i, intensity_t value) { this->intensities[i] = value; }
+    void addKeys(Spectrum &other);
+    std::map<mz_t, intensity_t>::iterator begin() { return this->peaks.begin(); }
+    std::map<mz_t, intensity_t>::iterator end() { return this->peaks.end(); }
+    int size() { return this->peaks.size(); }
 };
 
 #endif // SPECTRUM_HPP_
