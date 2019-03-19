@@ -12,7 +12,6 @@ double findPositivityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &
             if (ratio < alpha) alpha = ratio;
         }
     }
-    if (std::isnan(alpha)) alpha = 0.0;
     return alpha;
 }
 
@@ -49,17 +48,25 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     Eigen::VectorXd &c = prob->c;
     Eigen::MatrixXd &A = prob->A;
 
+    Eigen::VectorXd d = Eigen::VectorXd::Zero(n-1);
     for (size_t j = 0; j < n-1; j++) {
-        mz_t dj = nu->getRatio(j+1) - nu->getRatio(j);
-        b[j] = -dj;
+        d[j] = nu->getRatio(j+1) - nu->getRatio(j);
     }
+    b.head(n-1) = -d;
+    b.tail(k) = Eigen::VectorXd::Zero(k);
+
+    // Compute cdf of empirical spectrum
+    Eigen::VectorXd g = Eigen::VectorXd::Zero(n);
     intensity_t gj = 0.0;
     for (size_t j = 0; j < n; j++) {
         gj += nu->getIntensity(j);
-        c[j] = gj;
-        c[j+n] = -gj;
+        g[j] = gj;
     }
+    c.head(n) = g;
+    c.segment(n, n) = -g;
+    c.tail(k) = Eigen::VectorXd::Zero(k);
 
+    // Compute cdfs of theoretical spectra
     for (size_t i = 0; i < k; i++) {
     	intensity_t fj = 0.0;
     	for (size_t j = 0; j < n; j++) {
@@ -68,6 +75,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
         }
     }
 
+    // Compute constraint matrix A
     Eigen::MatrixXd J = Eigen::MatrixXd::Identity(n, n).block(0, 0, n-1, n);
     A.block(0, 0, n-1, n) = -J;
     A.block(0, n, n-1, n) = -J;
@@ -75,9 +83,14 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     A.block(n-1, n, k, n) = -F;
     A.block(n-1, 2*n, k, k) = -Eigen::MatrixXd::Identity(k, k);
 
-    // Check positive-definiteness of A
+    // Check rank of A
     Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(A);
-    // TODO
+    int rank = luDecomposition.rank();
+    if (rank != A.rows()) {
+        std::cout << "[Warning] A is of shape (" << A.rows() << ", " << A.cols() << ")";
+        std::cout << " and rank " << rank << std::endl;
+        std::cout << "[Warning] A is not a full-rank matrix" << std::endl;
+    }
 
     return std::unique_ptr<ProblemInstance>(prob);
 }
@@ -88,18 +101,17 @@ std::unique_ptr<IpmSolution> createInitialSolution(std::unique_ptr<ProblemInstan
     size_t k = prob->k, n = prob->n;
 
     // Initialize x
-    for (size_t i = 0; i < n-1; i++) sol->x[i] = -prob->b[i] / 2.0;
+    Eigen::ArrayXd d = -prob->b.head(n-1).array();
+    sol->x.segment(0, n-1) = (d / 2.0).matrix();
     sol->x[n-1] = 2.0 / 3.0;
-    for (size_t i = n; i < 2*n-1; i++) sol->x[i] = -prob->b[i-n] / 2.0;
+    sol->x.segment(n, n-1) = (d / 2.0).matrix();
     sol->x[2*n-1] = 1.0 / 3.0;
-    for (size_t i = 2*n; i < 2*n+k; i++) sol->x[i] = 1.0 / 3.0;
+    sol->x.tail(k) = Eigen::VectorXd::Ones(k) * (1.0 / 3.0);
 
     // Initialize y
+    Eigen::VectorXd g = prob->c.head(n);
     Eigen::VectorXd p = Eigen::VectorXd::Constant(k, 1.0 / static_cast<float>(k));
-    Eigen::VectorXd t = Eigen::VectorXd::Ones(n-1);
-    for (size_t j = 0; j < n-1; j++) {
-        t[j] += std::abs(prob->F.col(j).dot(p) - prob->c[j]);
-    }
+    Eigen::VectorXd t = ((prob->F.transpose() * p - g).head(n-1).cwiseAbs().array() + 1.0).matrix();
     sol->y.head(n-1) = t;
     sol->y.tail(k) = p;
 
@@ -127,16 +139,12 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     Eigen::MatrixXd A = prob->A;
     Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
 
-    double eta = 0.9;
-
     for (size_t t = 0; t < nMaxIterations; t++) {
 
         // assert(isFeasible(sol, prob, 1e-5)); // TODO
 
-        Eigen::MatrixXd X = x.asDiagonal();
         Eigen::VectorXd zinv = (1.0 / z.array()).matrix();
         Eigen::VectorXd zinvx = x.cwiseQuotient(z);
-        Eigen::MatrixXd ZinvX = zinvx.asDiagonal();
         Eigen::VectorXd _1 = Eigen::VectorXd::Ones(z.size());
 
         // -- PREDICTOR STEP (AFFINE SCALING) --
@@ -152,11 +160,11 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         sigmaDecomposition.factorize(A, zinvx);
     	Eigen::VectorXd r = b + A * zinvx.cwiseProduct(rd);
     	Eigen::VectorXd dyAff = sigmaDecomposition.solve(r);
-    	dyAff = nantonumVec(dyAff);
+    	//dyAff = nantonumVec(dyAff);
     	Eigen::VectorXd dzAff = rd - A.transpose() * dyAff;
-    	dzAff = nantonumVec(dzAff);
+    	//dzAff = nantonumVec(dzAff);
     	Eigen::VectorXd dxAff = -x - zinvx.cwiseProduct(dzAff);
-    	dxAff = nantonumVec(dxAff);
+    	//dxAff = nantonumVec(dxAff);
 
         // Choose step lengths while satisfying positivity constraints:
         // Choose alphaP such that new x is positive
@@ -169,6 +177,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     	double muAff = (x + alphaP * dxAff).dot(z + alphaD * dzAff) / static_cast<double>(x.size());
         double sigma = std::pow(muAff / mu, 3.0);
     	if (std::isnan(sigma)) sigma = 0.0;
+        sigma = std::max(0.0, sigma);
 
     	// -- CENTER-CORRECTOR STEP (AGGREGATED SYSTEM)
 
@@ -185,12 +194,11 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
     	Eigen::VectorXd dz = rd - A.transpose() * dy;
     	Eigen::VectorXd dx = -x - zinvx.cwiseProduct(dz) + zinv.cwiseProduct(sigma * mu * _1 - correction);
 
-    	std::min(eta, 1.0);
         alphaP = findPositivityConstrainedStepLength(x, dx, 1.0);
         alphaD = findPositivityConstrainedStepLength(z, dz, 1.0);
+        double eta = std::max(0.995, 1.0 - mu);
         alphaP = std::min(1.0, eta * alphaP);
         alphaD = std::min(1.0, eta * alphaD);
-        eta *= 1.001;
 
         std::cout << "\talphaP: " << alphaP << " - alphaD: " << alphaD << " - sigma: ";
         std::cout << sigma << "\n" << std::endl;
@@ -201,7 +209,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         z += alphaD * dz;
         z = nantonumVec((z.array() < 1e-20).select(1e-20, z));
         y += alphaD * dy;
-        y = nantonumVec(y);
+        //y = nantonumVec(y);
     }
 
     return sol;

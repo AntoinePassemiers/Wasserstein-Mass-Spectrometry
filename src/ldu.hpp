@@ -13,6 +13,8 @@ private:
     Eigen::VectorXd kinv;
     Eigen::VectorXd h3;
     Eigen::MatrixXd F;
+    Eigen::MatrixXd L;
+    Eigen::MatrixXd Kinv;
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> M2Decomposition;
     Eigen::ColPivHouseholderQR<Eigen::MatrixXd> SigmaDecomposition; // FIXME
 public:

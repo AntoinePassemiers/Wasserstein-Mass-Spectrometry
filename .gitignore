@@ -4,6 +4,11 @@
 *.lib
 *.so
 *.exe
+*.py
+*.pyc
 
 FIO00010.txt
 MCH00013.txt
+
+build/
+__pycache__/
