@@ -87,7 +87,7 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
     size_t k = problemInstance->k;
 
-    std::unique_ptr<IpmSolution> sol = interiorPointMethod(
+    std::unique_ptr<IpmSolution> sol = longStepPathFollowingMethod(
 		    problemInstance, pars.epsilon, pars.nMaxIterations);
     Eigen::VectorXd p = sol->y.tail(k);
     for (size_t i = 0; i < k; i++) {

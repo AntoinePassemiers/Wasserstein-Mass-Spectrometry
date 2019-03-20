@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <random>
 #include <functional>
 #include <math.h>
 #include <Eigen/Core>
@@ -67,7 +68,11 @@ std::unique_ptr<IpmSolution> createInitialSolution(
         std::unique_ptr<ProblemInstance> &prob);
 
 
-std::unique_ptr<IpmSolution> interiorPointMethod(
+std::unique_ptr<IpmSolution> mehrotraPredictorCorrectorMethod(
+        std::unique_ptr<ProblemInstance> &prob, double epsilon, size_t nMaxIterations);
+
+
+std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
         std::unique_ptr<ProblemInstance> &prob, double epsilon, size_t nMaxIterations);
 
 

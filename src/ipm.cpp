@@ -125,7 +125,97 @@ std::unique_ptr<IpmSolution> createInitialSolution(std::unique_ptr<ProblemInstan
 }
 
 
-std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance> &prob, double epsilon, size_t nMaxIterations) {
+std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon,
+        size_t nMaxIterations) {
+
+    std::function<Eigen::VectorXd (Eigen::VectorXd)> nantonumVec = [](Eigen::VectorXd x) {
+        return (x.array() != x.array()).select(0.0, x);
+    };
+
+    // Find initial solution
+    std::unique_ptr<IpmSolution> sol = createInitialSolution(prob);
+    assert(isFeasible(sol, prob, 1e-5)); // TODO
+
+    LDUDecomposition sigmaDecomposition(prob->n, prob->k);
+
+    // Extract data from problem instance and initial solution
+    Eigen::VectorXd b = prob->b, c = prob->c;
+    Eigen::MatrixXd A = prob->A;
+    Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
+
+    double muOld = 1e+5;
+    double sigmaMin = 0.005;
+    double sigmaMax = 0.9;
+    double sigma = 0.005;
+
+    for (size_t t = 0; t < nMaxIterations; t++) {
+
+        // assert(isFeasible(sol, prob, 1e-5)); // TODO
+
+        Eigen::VectorXd zinv = (1.0 / z.array()).matrix();
+        Eigen::VectorXd zinvx = x.cwiseQuotient(z);
+        Eigen::VectorXd _1 = Eigen::VectorXd::Ones(z.size());
+
+        // Compute feasibility gaps (primal residual and dual residual)
+        Eigen::VectorXd rp = b - A * x;
+        Eigen::VectorXd rd = c - A.transpose() * y - z;
+
+        // Compute centrality (duality measure)
+        double mu = x.dot(z) / static_cast<double>(x.size());
+
+        sigma = std::pow(mu / muOld, 2.0);
+        if (sigma > sigmaMax) {
+            sigma = sigmaMax;
+        } else if (sigma < sigmaMin) {
+            sigma = sigmaMin;
+        } else if (sigma < 10.0 * sigmaMin) {
+            if (mu < 1e-4) {
+                sigma = std::pow(mu / muOld, 3.0);
+            } else {
+                sigma = std::pow(mu / muOld, 4.0);
+            }
+        }
+        muOld = mu;
+
+        sigma = 0.0;
+
+        // Check the epsilon-feasibility of current solution
+        std::cout << "Iteration: " << t+1 << " - Centrality: " << mu << " - Residuals: ";
+        std::cout << rp.norm() << ", " << rd.norm() << std::endl;
+        std::cout << "\tObjectives: " << y.dot(b) << " <= " << x.dot(c) << std::endl;
+        if ((rp.norm() < epsilon) and (rd.norm() < epsilon) and (std::abs(mu) < epsilon)) break;
+
+        sigmaDecomposition.factorize(A, zinvx);
+        Eigen::VectorXd r = b - A * zinv.cwiseProduct(sigma * mu * _1);
+        Eigen::VectorXd dy = sigmaDecomposition.solve(r);
+        Eigen::VectorXd dz = - A.transpose() * dy;
+        Eigen::VectorXd dx = -x - zinvx.cwiseProduct(dz) + zinv.cwiseProduct(sigma * mu * _1);
+
+        double alpha = findPositivityConstrainedStepLength(x, dx, 1.0);
+        alpha = findPositivityConstrainedStepLength(z, dz, alpha);
+
+        std::cout << "\talpha: " << alpha << " - sigma: ";
+        std::cout << sigma << "\n" << std::endl;
+
+        // Update solution
+        x += alpha * dx;
+        x = nantonumVec((x.array() < 1e-20).select(1e-20, x));
+        z += alpha * dz;
+        z = nantonumVec((z.array() < 1e-20).select(1e-20, z));
+        y += alpha * dy;
+        //y = nantonumVec(y);
+    }
+
+    return sol;
+}
+
+
+std::unique_ptr<IpmSolution> mehrotraPredictorCorrectorMethod(
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon,
+        size_t nMaxIterations) {
 
     std::function<Eigen::VectorXd (Eigen::VectorXd)> nantonumVec = [](Eigen::VectorXd x) {
         return (x.array() != x.array()).select(0.0, x);
@@ -159,7 +249,7 @@ std::unique_ptr<IpmSolution> interiorPointMethod(std::unique_ptr<ProblemInstance
         // Compute centrality (duality measure)
         double mu = x.dot(z) / static_cast<double>(x.size());
 
-        // Compute affine scaling direction
+        // Compute affine scaling (newtonian) direction
         sigmaDecomposition.factorize(A, zinvx);
     	Eigen::VectorXd r = b + A * zinvx.cwiseProduct(rd);
     	Eigen::VectorXd dyAff = sigmaDecomposition.solve(r);
