@@ -18,15 +18,23 @@ void LDUDecomposition::factorize(Eigen::MatrixXd A, Eigen::VectorXd h) {
     Eigen::MatrixXd K = J * Hplus * J.transpose();
     this->Kinv = K.inverse();
     this->L = L;
-    Eigen::MatrixXd G = Hplus - L.transpose() * this->Kinv * L;
+
+    // Eigen::MatrixXd G = Hplus - L.transpose() * this->Kinv * L;
+    Eigen::VectorXd hmax = h1.cwiseMax(h2);
+    Eigen::VectorXd hmin = h1.cwiseMin(h2);
+    Eigen::VectorXd g = 4.0 * hmax.cwiseQuotient(h1 + h2).cwiseProduct(hmin);
+    //g[this->n - 1] = (h1 + h2)[this->n - 1];
+    Eigen::MatrixXd G = g.asDiagonal();
+
+    Eigen::MatrixXd GGG = g.tail(this->k).asDiagonal();
+    //std::cout << GGG << std::endl;
+    std::cout << "Rank of G: " << Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(G).rank() << std::endl;
 
     Eigen::MatrixXd H3 = this->h3.asDiagonal();
     Eigen::MatrixXd M2 = this->F * G * this->F.transpose() + H3;
+    this->M2 = M2;
     this->M2Decomposition = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(M2);
-    this->Sigma = A * h.asDiagonal() * A.transpose();
-    /**
-    this->SigmaDecomposition = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(Sigma);
-    */
+    this->Sigma = A * h.asDiagonal() * A.transpose(); // FIXME
 }
 
 
@@ -37,22 +45,30 @@ Eigen::VectorXd LDUDecomposition::solve(Eigen::VectorXd r) {
     // Solve L . v1 = r
     Eigen::VectorXd v1 = Eigen::VectorXd(this->n + this->k - 1);
     v1.head(this->n - 1) = r1;
-    v1.tail(this->k) = r2 - this->F * this->L.transpose() * this->Kinv * r1;
+    v1.tail(this->k) = r2 - this->F * this->L.transpose() * this->kinv.head(this->n - 1).cwiseProduct(r1);
 
     // Solve M . v2 = v1
     Eigen::VectorXd v2 = Eigen::VectorXd(this->n + this->k - 1);
-    v2.head(this->n - 1) = this->Kinv * v1.head(this->n - 1);
+    v2.head(this->n - 1) = this->kinv.head(this->n - 1).cwiseProduct(v1.head(this->n - 1));
     v2.tail(this->k) = this->M2Decomposition.solve(v1.tail(this->k));
+    //v2.tail(this->k) = this->M2.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(v1.tail(this->k));
+
+    //std::cout << this->M2 * v2.tail(this->k) - v1.tail(this->k) << std::endl;
+    // std::cout << this->M2 << std::endl;
 
     // Solve R . v3 = v2
     Eigen::VectorXd v3 = Eigen::VectorXd(this->n + this->k - 1);
-    v3.head(this->n - 1) = v2.head(this->n - 1) - this->Kinv * this->L * this->F.transpose() * v2.tail(this->k);
+    v3.head(this->n - 1) = v2.head(this->n - 1) - this->kinv.head(
+            this->n - 1).cwiseProduct(this->L * this->F.transpose() * v2.tail(this->k));
     v3.tail(this->k) = v2.tail(this->k);
-    /**
-    Eigen::VectorXd v3 = SigmaDecomposition.solve(r);
-    */
 
-    std::cout << (this->Sigma * v3 - r).tail(this->k) << std::endl;
+    //std::cout << (this->Sigma * v3 - r).tail(this->k) << std::endl; // FIXME
 
     return v3;
+}
+
+
+double diagonalMatrixLogConditionNumber(Eigen::MatrixXd &M) {
+    Eigen::VectorXd absEigenvalues = M.diagonal().cwiseAbs();
+    return std::log(absEigenvalues.maxCoeff()) - std::log(absEigenvalues.minCoeff());
 }

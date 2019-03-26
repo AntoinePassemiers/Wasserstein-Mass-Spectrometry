@@ -16,16 +16,30 @@ double findPositivityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &
 }
 
 
-bool isFeasible(
+bool isPrimalFeasible(
         std::unique_ptr<IpmSolution> &sol,
         std::unique_ptr<ProblemInstance> &prob,
         double epsilon) {
     auto rp = ((prob->A * sol->x) - prob->b).array().abs();
+    return (sol->x.array() >= -epsilon).all() && ((rp < epsilon).all());
+}
+
+
+bool isDualFeasible(
+        std::unique_ptr<IpmSolution> &sol,
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon) {
     auto rd = (prob->A.transpose() * sol->y + sol->z - prob->c).array().abs();
-    return (sol->x.array() >= -epsilon).all()
-        && (sol->z.array() >= -epsilon).all()
-        && ((rp < epsilon).all())
-        && ((rd < epsilon).all());
+    return (sol->z.array() >= -epsilon).all() && ((rd < epsilon).all());
+}
+
+
+bool isFeasible(
+        std::unique_ptr<IpmSolution> &sol,
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon) {
+    return isPrimalFeasible(sol, prob, epsilon)
+        && isDualFeasible(sol, prob, epsilon);
 }
 
 
@@ -200,10 +214,11 @@ std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
         std::cout << sigma << "\n" << std::endl;
 
         // Update solution
+        double thresh = 1e-10;
         x += alpha * dx;
-        x = nantonumVec((x.array() < 1e-20).select(1e-20, x));
+        x = nantonumVec((x.array() < thresh).select(thresh, x));
         z += alpha * dz;
-        z = nantonumVec((z.array() < 1e-20).select(1e-20, z));
+        z = nantonumVec((z.array() < thresh).select(thresh, z));
         y += alpha * dy;
         //y = nantonumVec(y);
     }

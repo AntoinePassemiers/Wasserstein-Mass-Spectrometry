@@ -47,6 +47,18 @@ double findPositivityConstrainedStepLength(
         double alpha0);
 
 
+bool isPrimalFeasible(
+        std::unique_ptr<IpmSolution> &sol,
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon);
+
+
+bool isDualFeasible(
+        std::unique_ptr<IpmSolution> &sol,
+        std::unique_ptr<ProblemInstance> &prob,
+        double epsilon);
+
+
 bool isFeasible(
         std::unique_ptr<IpmSolution> &sol,
         std::unique_ptr<ProblemInstance> &prob,
