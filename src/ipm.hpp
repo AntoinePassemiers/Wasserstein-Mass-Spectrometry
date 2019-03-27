@@ -72,8 +72,8 @@ bool satisfiesKKTConditions(
 
 
 std::unique_ptr<ProblemInstance> formulateProblem(
-        std::vector<std::unique_ptr<Spectrum>> &mu,
-        std::unique_ptr<Spectrum> &nu);
+        std::vector<Spectrum> &mu,
+        Spectrum &nu);
 
 
 std::unique_ptr<IpmSolution> createInitialSolution(

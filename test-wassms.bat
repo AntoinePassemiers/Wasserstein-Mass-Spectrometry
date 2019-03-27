@@ -1,1 +1,1 @@
-wassms.exe data/MassBank-data-master/Osaka_MCHRI
+wassms.exe data/dataset1/1.txt data/dataset1/2.txt

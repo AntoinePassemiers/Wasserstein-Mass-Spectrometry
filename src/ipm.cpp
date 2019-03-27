@@ -1,7 +1,8 @@
 #include "ipm.hpp"
 
 
-double findPositivityConstrainedStepLength(Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
+double findPositivityConstrainedStepLength(
+        Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
     // x_i + alpha * dx_i >= 0
     //     alpha >= -x_i / dx_i     if dx_i > 0 and x_i >= 0 -> ok since alpha >= 0
     //     alpha <  -x_i / dx_i     if dx_i < 0 and x_i >= 0
@@ -52,10 +53,9 @@ bool satisfiesKKTConditions(
 
 
 std::unique_ptr<ProblemInstance> formulateProblem(
-        std::vector<std::unique_ptr<Spectrum>> &mu,
-        std::unique_ptr<Spectrum> &nu) {
+        std::vector<Spectrum> &mu, Spectrum &nu) {
 
-    size_t k = mu.size(), n = nu->size();
+    size_t k = mu.size(), n = nu.size();
     ProblemInstance *prob = new ProblemInstance(n, k);
     Eigen::MatrixXd &F = prob->F;
     Eigen::VectorXd &b = prob->b;
@@ -64,7 +64,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
 
     Eigen::VectorXd d = Eigen::VectorXd::Zero(n-1);
     int j = 0;
-    for (auto it = nu->begin(); it != std::prev(nu->end(), 1); it++) {
+    for (auto it = nu.begin(); it != std::prev(nu.end(), 1); it++) {
         d[j++] = std::next(it, 1)->first - it->first;
     }
     b.head(n-1) = -d;
@@ -74,7 +74,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     Eigen::VectorXd g = Eigen::VectorXd::Zero(n);
     intensity_t gj = 0.0;
     j = 0;
-    for (auto it = nu->begin(); it != nu->end(); it++) {
+    for (auto it = nu.begin(); it != nu.end(); it++) {
         gj += it->second;
         g[j++] = gj;
     }
@@ -86,7 +86,7 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     for (size_t i = 0; i < k; i++) {
     	intensity_t fj = 0.0;
         j = 0;
-    	for (auto it = mu[i]->begin(); it != mu[i]->end(); it++) {
+    	for (auto it = mu[i].begin(); it != mu[i].end(); it++) {
             fj += it->second;
             F(i, j++) = fj;
         }
@@ -214,7 +214,7 @@ std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
         std::cout << sigma << "\n" << std::endl;
 
         // Update solution
-        double thresh = 1e-10;
+        double thresh = 1e-20;
         x += alpha * dx;
         x = nantonumVec((x.array() < thresh).select(thresh, x));
         z += alpha * dz;

@@ -31,9 +31,9 @@ void LDUDecomposition::factorize(Eigen::MatrixXd A, Eigen::VectorXd h) {
     std::cout << "Rank of G: " << Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(G).rank() << std::endl;
 
     Eigen::MatrixXd H3 = this->h3.asDiagonal();
-    Eigen::MatrixXd M2 = this->F * G * this->F.transpose() + H3;
-    this->M2 = M2;
-    this->M2Decomposition = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(M2);
+    this->P = this->F * G * this->F.transpose() + H3;
+    this->PDecomposition = Eigen::ColPivHouseholderQR<Eigen::MatrixXd>(this->P);
+
     this->Sigma = A * h.asDiagonal() * A.transpose(); // FIXME
 }
 
@@ -50,8 +50,7 @@ Eigen::VectorXd LDUDecomposition::solve(Eigen::VectorXd r) {
     // Solve M . v2 = v1
     Eigen::VectorXd v2 = Eigen::VectorXd(this->n + this->k - 1);
     v2.head(this->n - 1) = this->kinv.head(this->n - 1).cwiseProduct(v1.head(this->n - 1));
-    v2.tail(this->k) = this->M2Decomposition.solve(v1.tail(this->k));
-    //v2.tail(this->k) = this->M2.bdcSvd(Eigen::ComputeThinU | Eigen::ComputeThinV).solve(v1.tail(this->k));
+    v2.tail(this->k) = this->PDecomposition.solve(v1.tail(this->k));
 
     //std::cout << this->M2 * v2.tail(this->k) - v1.tail(this->k) << std::endl;
     // std::cout << this->M2 << std::endl;

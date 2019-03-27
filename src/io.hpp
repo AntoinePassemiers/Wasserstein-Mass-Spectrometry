@@ -8,7 +8,7 @@
 #include <sstream>
 
 
-Spectrum *loadRecord(std::string filepath);
+Spectrum loadRecord(const std::string filepath);
 
 
 #endif // IO_HPP__

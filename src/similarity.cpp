@@ -1,8 +1,8 @@
-#include "wasserstein.hpp"
+#include "similarity.hpp"
 
 
-double wassersteinDistance(std::unique_ptr<Spectrum> &S1, std::unique_ptr<Spectrum> &S2) {
-    Spectrum N(*S1), M(*S2);
+double wassersteinDistance(Spectrum &S1, Spectrum &S2) {
+    Spectrum N(S1), M(S2);
     auto i = N.begin(), j = M.begin();
     double distance = 0.0;
     while ((i != N.end()) && (j != M.end())) {

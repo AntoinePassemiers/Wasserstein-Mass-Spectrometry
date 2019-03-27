@@ -1,6 +1,5 @@
 #include "spectrum.hpp"
 #include "io.hpp"
-#include "wasserstein.hpp"
 #include "ipm.hpp"
 
 #include <algorithm>
@@ -57,9 +56,9 @@ int main(int argc, char *argv[]) {
     params pars = parseCLA(argc, argv);
     if (pars.hasParseError) return 1;
 
-    std::unique_ptr<Spectrum> mixture(loadRecord(pars.filepath1));
-    std::vector<std::unique_ptr<Spectrum>> theoreticalSpectra;
+    Spectrum mixture = loadRecord(pars.filepath1).normalize();
 
+    std::vector<Spectrum> theoreticalSpectra;
     std::ifstream recordFile(pars.filepath2);
     std::string line;
     while (std::getline(recordFile, line)) {
@@ -71,17 +70,17 @@ int main(int argc, char *argv[]) {
             std::stringstream ss;
             ss << pars.folder << "/" << filename;
             std::string filepath = ss.str();
-            Spectrum *spectrum = loadRecord(filepath);
-            theoreticalSpectra.push_back(std::unique_ptr<Spectrum>(spectrum));
-            mixture->addKeys(*spectrum);
+            Spectrum spectrum = loadRecord(filepath).normalize();
+            theoreticalSpectra.push_back(spectrum);
+            mixture.addKeys(spectrum);
         }
     }
 
     for (auto it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
-        std::unique_ptr<Spectrum> &spectrum = *it;
-        spectrum->addKeys(*mixture);
-        std::cout << mixture->size() << ", " << spectrum->size() << std::endl;
-        assert(mixture->size() == spectrum->size());
+        Spectrum &spectrum = *it;
+        spectrum.addKeys(mixture);
+        std::cout << mixture.size() << ", " << spectrum.size() << std::endl;
+        assert(mixture.size() == spectrum.size());
     }
     
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);

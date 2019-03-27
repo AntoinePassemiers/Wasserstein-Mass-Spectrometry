@@ -24,12 +24,13 @@ debug: CXXFLAGS += -g -O0
 debug: clean wassms deconvms
 
 # link libraries
-buildLibwassms: spectrum.o wasserstein.o io.o
+buildLibwassms: spectrum.o similarity.o io.o
 	ar r libwassms.a *.o
 
-buildLibdeconvms: spectrum.o wasserstein.o io.o ipm.o ldu.o
+buildLibdeconvms: spectrum.o io.o ipm.o ldu.o
 	ar r libdeconvms.a *.o
 
+# Compile source files
 wassms.o: wassms.cpp
 	$(CC) $(CXXFLAGS) -c wassms.cpp
 
@@ -42,8 +43,8 @@ spectrum.o: spectrum.cpp spectrum.hpp
 io.o: io.cpp io.hpp
 	$(CC) $(CXXFLAGS) -c io.cpp
 
-wasserstein.o: wasserstein.cpp wasserstein.hpp
-	$(CC) $(CXXFLAGS) -c wasserstein.cpp
+similarity.o: similarity.cpp similarity.hpp
+	$(CC) $(CXXFLAGS) -c similarity.cpp
 
 ipm.o: ipm.cpp ipm.hpp
 	$(CC) $(CXXFLAGS) -c ipm.cpp -I$(EIGEN_PATH)
@@ -51,6 +52,7 @@ ipm.o: ipm.cpp ipm.hpp
 ldu.o: ldu.cpp ldu.hpp
 	$(CC) $(CXXFLAGS) -c ldu.cpp -I$(EIGEN_PATH)
 
+# Clean command
 clean:
 	clear
 	-rm wassms

@@ -1,6 +1,6 @@
 #include "spectrum.hpp"
 #include "io.hpp"
-#include "wasserstein.hpp"
+#include "similarity.hpp"
 
 #include <algorithm>
 #include <iostream>
@@ -12,30 +12,44 @@
 typedef struct _params {
     char *filepath1;
     char *filepath2;
-    float threshold;
+    Similarities method;
+    double resolution;
     bool has_parse_error;
 } params;
 
 
-params parse_error(params pars) {
+params parseError(params pars) {
     std::cout << "Error. Calls to wassms must be of the form:\n" << std::endl;
-    std::cout << "\twassms <record_file_1> <record_file_2> [--thresh value]" << std::endl;
+    std::cout << "\twassms <record_file_1> <record_file_2> [--m method] [--r resolution]\n" << std::endl;
+    std::cout << "Method can be either 'W' (Wasserstein), 'E' (euclidean) ";
+    std::cout << "or 'J' (Jaccard score). Resolution is expressed in Daltons." << std::endl;
     pars.has_parse_error = 1;
     return pars;
 }
 
 
 params parseCLA(int argc, char *argv[]) {
+    // Initialize parameters
     params pars;
     memset(&pars, 0x00, sizeof(params));
-    if (argc < 3) return parse_error(pars);
+    pars.method = Similarities::WASSERSTEIN;
+
+    if (argc < 3) return parseError(pars);
 
     pars.filepath1 = argv[1];
     pars.filepath2 = argv[2];
-
-    for (int i = 3 ; i < argc ; i++) {
-        if (strcmp(argv[i], "--thresh") == 0) {
-            pars.threshold = atof(argv[++i]);
+    for (int i = 3; i < argc; i++) {
+        if (strcmp(argv[i], "--m") == 0) {
+            ++i;
+            if (strcmp(argv[i], "E") == 0) {
+                pars.method = Similarities::EUCLIDEAN;
+            } else if (strcmp(argv[i], "J") == 0) {
+                pars.method = Similarities::JACCARD_SCORE;
+            } else {
+                pars.method = Similarities::WASSERSTEIN;
+            }
+        } else if (strcmp(argv[i], "--r") == 0) {
+            pars.resolution = atof(argv[++i]);
         }
     }
     return pars;
@@ -47,10 +61,14 @@ int main(int argc, char *argv[]) {
     params pars = parseCLA(argc, argv);
     if (pars.has_parse_error) return 1;
 
-    std::unique_ptr<Spectrum> spectrum1(loadRecord(pars.filepath1));
-    std::unique_ptr<Spectrum> spectrum2(loadRecord(pars.filepath2));
+    Spectrum spectrum1 = loadRecord(pars.filepath1);
+    Spectrum spectrum2 = loadRecord(pars.filepath2);
 
-    std::cout << "Distance: " << wassersteinDistance(spectrum1, spectrum2) << std::endl;
+    if (pars.method == Similarities::WASSERSTEIN) {
+        spectrum1 = spectrum1.normalize();
+        spectrum2 = spectrum2.normalize();
+        std::cout << "Distance: " << wassersteinDistance(spectrum1, spectrum2) << std::endl;
+    }
 
     std::cout << "Finished";
     return 0;

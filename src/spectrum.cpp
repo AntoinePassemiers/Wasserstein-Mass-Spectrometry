@@ -5,13 +5,30 @@ intensity_t& Spectrum::operator[](const mz_t key) {
     return this->peaks[key];
 }
 
-void Spectrum::normalize() {
-    intensity_t s = 0.0;
-    for (auto it = this->begin(); it != this->end(); it++) s += it->second;
-    if (s != 0.0) {
-        for (auto it = this->begin(); it != this->end(); it++) it->second /= s;
+
+Spectrum Spectrum::changeResolution(const double resolution) {
+    Spectrum newSpectrum(*this);
+    for (auto it = newSpectrum.begin(); it != newSpectrum.end(); it++) {
+        mz_t key = it->first;
+        intensity_t value = it->second;
+        newSpectrum.remove(key);
+        mz_t roundedKey = resolution * std::round(key / resolution);
+        newSpectrum[roundedKey] = value;
     }
+    return newSpectrum;
 }
+
+
+Spectrum Spectrum::normalize() {
+    Spectrum newSpectrum(*this);
+    intensity_t s = 0.0;
+    for (auto it = newSpectrum.begin(); it != newSpectrum.end(); it++) s += it->second;
+    if (s != 0.0) {
+        for (auto it = newSpectrum.begin(); it != newSpectrum.end(); it++) it->second /= s;
+    }
+    return newSpectrum;
+}
+
 
 void Spectrum::addKeys(Spectrum &other) {
     for (std::map<mz_t, intensity_t>::iterator it = other.begin(); it != other.end(); it++) {
