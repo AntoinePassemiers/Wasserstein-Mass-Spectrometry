@@ -10,11 +10,11 @@
 
 
 typedef struct _params {
-    char *filepath1;
-    char *filepath2;
-    Similarities method;
-    double resolution;
-    bool has_parse_error;
+    char *filepath1      = nullptr;
+    char *filepath2      = nullptr;
+    Similarities method  = Similarities::WASSERSTEIN;
+    double resolution    = 0.02;
+    bool has_parse_error = 0;
 } params;
 
 
@@ -31,8 +31,6 @@ params parseError(params pars) {
 params parseCLA(int argc, char *argv[]) {
     // Initialize parameters
     params pars;
-    memset(&pars, 0x00, sizeof(params));
-    pars.method = Similarities::WASSERSTEIN;
 
     if (argc < 3) return parseError(pars);
 
@@ -67,7 +65,12 @@ int main(int argc, char *argv[]) {
     if (pars.method == Similarities::WASSERSTEIN) {
         spectrum1 = spectrum1.normalize();
         spectrum2 = spectrum2.normalize();
-        std::cout << "Distance: " << wassersteinDistance(spectrum1, spectrum2) << std::endl;
+        std::cout << "Wasserstein distance: ";
+        std::cout << wassersteinDistance(spectrum1, spectrum2) << std::endl;
+    } else if (pars.method == Similarities::EUCLIDEAN) {
+        std::cout << "Euclidean distance: ";
+        std::cout << euclideanDistance(spectrum1, spectrum2, pars.resolution);
+        std::cout << std::endl;
     }
 
     std::cout << "Finished";

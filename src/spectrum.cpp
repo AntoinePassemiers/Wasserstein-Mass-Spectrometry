@@ -13,7 +13,11 @@ Spectrum Spectrum::changeResolution(const double resolution) {
         intensity_t value = it->second;
         newSpectrum.remove(key);
         mz_t roundedKey = resolution * std::round(key / resolution);
-        newSpectrum[roundedKey] = value;
+        if (this->peaks.find(roundedKey) != this->peaks.end()) {
+            newSpectrum[roundedKey] += value;
+        } else {
+            newSpectrum[roundedKey] = value;
+        }
     }
     return newSpectrum;
 }
