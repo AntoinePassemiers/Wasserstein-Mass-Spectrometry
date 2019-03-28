@@ -71,6 +71,10 @@ int main(int argc, char *argv[]) {
         std::cout << "Euclidean distance: ";
         std::cout << euclideanDistance(spectrum1, spectrum2, pars.resolution);
         std::cout << std::endl;
+    } else if (pars.method == Similarities::JACCARD_SCORE) {
+        std::cout << "Jaccard score: ";
+        std::cout << jaccardScore(spectrum1, spectrum2, pars.resolution, 0.05);
+        std::cout << std::endl;
     }
 
     std::cout << "Finished";

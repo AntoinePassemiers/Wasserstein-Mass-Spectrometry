@@ -21,7 +21,7 @@ double wassersteinDistance(Spectrum &S1, Spectrum &S2);
 double euclideanDistance(Spectrum &S1, Spectrum &S2, double resolution);
 
 
-double jaccardScore(Spectrum &S1, Spectrum &S2, double resolution);
+double jaccardScore(Spectrum &S1, Spectrum &S2, double resolution, double eps);
 
 
 #endif // SIMILARITY_HPP__

@@ -1,1 +1,1 @@
-wassms.exe data/dataset1/1.txt data/dataset1/2.txt --m E
+wassms.exe data/dataset1/1.txt data/dataset1/2.txt --m J
