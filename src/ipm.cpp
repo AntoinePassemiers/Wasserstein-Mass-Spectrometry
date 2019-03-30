@@ -1,5 +1,14 @@
+/**
+    ipm.cpp
+    Interior-point methods for mass spectrum deconvolution
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
+
 #include "ipm.hpp"
 
+namespace wassersteinms {
 
 double findPositivityConstrainedStepLength(
         Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
@@ -322,3 +331,5 @@ std::unique_ptr<IpmSolution> mehrotraPredictorCorrectorMethod(
 
     return sol;
 }
+
+} // namespace wassersteinms

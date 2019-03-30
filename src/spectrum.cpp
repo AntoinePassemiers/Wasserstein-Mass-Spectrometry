@@ -1,5 +1,14 @@
+/**
+    spectrum.cpp
+    Mass spectra
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
+
 #include "spectrum.hpp"
 
+namespace wassersteinms {
 
 Spectrum Spectrum::changeResolution(const double resolution) {
     Spectrum newSpectrum;
@@ -75,3 +84,5 @@ std::ostream& operator<<(std::ostream& out, const Spectrum& arr) {
     out << " ] " << std::endl;
     return out;
 }
+
+} // namespace wassersteinms

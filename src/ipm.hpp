@@ -1,3 +1,11 @@
+/**
+    ipm.hpp
+    Interior-point methods for mass spectrum deconvolution
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
+
 #ifndef IPM_HPP__
 #define IPM_HPP__
 
@@ -15,6 +23,7 @@
 #include "spectrum.hpp"
 #include "ldu.hpp"
 
+namespace wassersteinms {
 
 typedef struct _ipmSolution {
     Eigen::VectorXd x;
@@ -87,5 +96,6 @@ std::unique_ptr<IpmSolution> mehrotraPredictorCorrectorMethod(
 std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
         std::unique_ptr<ProblemInstance> &prob, double epsilon, size_t nMaxIterations);
 
+} // namespace wassersteinms
 
 #endif // IPM_HPP__

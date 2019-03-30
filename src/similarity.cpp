@@ -1,5 +1,14 @@
+/**
+    similarity.cpp
+    (Dis)similarity measures for mass spectra
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
+
 #include "similarity.hpp"
 
+namespace wassersteinms {
 
 double wassersteinDistance(Spectrum &S1, Spectrum &S2) {
     Spectrum N(S1), M(S2);
@@ -64,3 +73,5 @@ double jaccardScore(Spectrum &S1, Spectrum &S2, double resolution, double eps) {
     }
     return static_cast<double>(nMatchingPeaks) / nPeaks;
 }
+
+} // namespace wassersteinms

@@ -1,5 +1,14 @@
+/**
+    idu.cpp
+    IDU matrix factorization for mass spectrum deconvolution
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
+
 #include "ldu.hpp"
 
+namespace wassersteinms {
 
 void LDUDecomposition::factorize(Eigen::MatrixXd A, Eigen::VectorXd h) {
     Eigen::VectorXd h1 = h.head(this->n);
@@ -71,3 +80,5 @@ double diagonalMatrixLogConditionNumber(Eigen::MatrixXd &M) {
     Eigen::VectorXd absEigenvalues = M.diagonal().cwiseAbs();
     return std::log(absEigenvalues.maxCoeff()) - std::log(absEigenvalues.minCoeff());
 }
+
+} // namespace wassersteinms

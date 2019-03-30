@@ -1,3 +1,11 @@
+/**
+    spectrum.hpp
+    Mass spectra
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
+
 #ifndef SPECTRUM_HPP_
 #define SPECTRUM_HPP_
 
@@ -11,6 +19,7 @@
 #include <numeric>
 #include <iostream>
 
+namespace wassersteinms {
 
 typedef double mz_t;
 typedef double intensity_t;
@@ -43,5 +52,7 @@ public:
     std::map<mz_t, intensity_t>::const_iterator end() const { return this->peaks.end(); }
     const int size() const { return this->peaks.size(); }
 };
+
+} // namespace wassersteinms
 
 #endif // SPECTRUM_HPP_

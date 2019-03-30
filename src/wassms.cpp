@@ -1,6 +1,10 @@
-#include "spectrum.hpp"
-#include "io.hpp"
-#include "similarity.hpp"
+/**
+    wassms.cpp
+    Compute dissimilarity between two spectra
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
 
 #include <algorithm>
 #include <iostream>
@@ -8,6 +12,11 @@
 #include <cstring>
 #include <memory>
 
+#include "spectrum.hpp"
+#include "io.hpp"
+#include "similarity.hpp"
+
+using namespace wassersteinms;
 
 typedef struct _params {
     char *filepath1      = nullptr;
@@ -43,10 +52,10 @@ params parseCLA(int argc, char *argv[]) {
                 pars.method = Similarities::EUCLIDEAN;
             } else if (strcmp(argv[i], "J") == 0) {
                 pars.method = Similarities::JACCARD_SCORE;
-            } else if (strcmp(argv[i], "J") == 0) {
+            } else if (strcmp(argv[i], "W") == 0) {
                 pars.method = Similarities::WASSERSTEIN;
             } else {
-                std::cout << "Error. Unknown method '" << pars.method;
+                std::cout << "Error. Unknown method '" << argv[i];
                 std::cout << "'." << std::endl;
             }
         } else if (strcmp(argv[i], "--r") == 0) {

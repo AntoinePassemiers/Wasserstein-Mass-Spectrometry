@@ -6,7 +6,7 @@ import numpy as np
 import subprocess
 
 
-METRIC = 'J'
+METRIC = 'RJ'
 
 if METRIC == 'E':
     out_filename, dataset, method = 'euclidean1', 'dataset1', 'E'

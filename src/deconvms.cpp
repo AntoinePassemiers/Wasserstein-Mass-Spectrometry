@@ -1,6 +1,10 @@
-#include "spectrum.hpp"
-#include "io.hpp"
-#include "ipm.hpp"
+/**
+    deconvms.cpp
+    Deconvolve empirical spectra
+    
+    @author Antoine Passemiers
+    @version 1.0 30/03/2019
+*/
 
 #include <algorithm>
 #include <iostream>
@@ -10,6 +14,11 @@
 #include <memory>
 #include <sstream>
 
+#include "spectrum.hpp"
+#include "io.hpp"
+#include "ipm.hpp"
+
+using namespace wassersteinms;
 
 typedef struct _params {
     char *filepath1;
