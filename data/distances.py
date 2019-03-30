@@ -4,8 +4,23 @@ import sys
 import pickle
 import numpy as np
 import subprocess
-from sklearn.manifold import TSNE
-import matplotlib.pyplot as plt
+
+
+METRIC = 'J'
+
+if METRIC == 'E':
+    out_filename, dataset, method = 'euclidean1', 'dataset1', 'E'
+elif METRIC == 'W':
+    out_filename, dataset, method = 'wasserstein1', 'dataset1', 'W'
+elif METRIC == 'J':
+    out_filename, dataset, method = 'jaccard1', 'dataset1', 'J'
+elif METRIC == 'RE':
+    out_filename, dataset, method = 'euclidean2', 'dataset2', 'E'
+elif METRIC == 'RW':
+    out_filename, dataset, method = 'wasserstein2', 'dataset2', 'W'
+elif METRIC == 'RJ':
+    out_filename, dataset, method = 'jaccard2', 'dataset2', 'J'
+n_molecules = 619 if dataset == 'dataset1' else 462
 
 
 def get_mass(filepath):
@@ -17,42 +32,23 @@ def get_mass(filepath):
     assert(0)
 
 
-if not os.path.isfile('distances'):
-    n_molecules = 619
-    massdiffs = np.zeros((n_molecules, n_molecules), dtype=np.float)
-    distances = np.zeros((n_molecules, n_molecules), dtype=np.float)
-    for i in range(n_molecules):
-        filepath1 = 'dataset1/%i.txt' % (i + 1)
-        mass1 = get_mass(filepath1)
-        for j in range(i):
-            filepath2 = 'dataset1/%i.txt' % (j + 1)
-            mass2 = get_mass(filepath2)
-            output = subprocess.check_output(['../wassms', filepath1, filepath2])
-            distances[i, j] = distances[j, i] = float(re.findall(r"[-+]?\d*\.\d+|\d+", str(output))[0])
-            massdiffs[i, j] = massdiffs[j, i] = abs(mass1 - mass2)
-        print(i)
-            
-    with open('distances', 'wb') as f:
-        pickle.dump((distances, massdiffs), f)
-else:
-    n_molecules = 619
-    with open('distances', 'rb') as f:
-        distances, massdiffs = pickle.load(f)
-    masses = np.asarray([get_mass('dataset1/%i.txt' % (i + 1)) for i in range(n_molecules)])
+massdiffs = np.zeros((n_molecules, n_molecules), dtype=np.float)
+distances = np.zeros((n_molecules, n_molecules), dtype=np.float)
+masses = list()
+for i in range(n_molecules):
+    filepath = '%s/%i.txt' % (dataset, i + 1)
+    masses.append(get_mass(filepath))
 
-    X_embedded = TSNE(n_components=2, metric='precomputed').fit_transform(distances)
-    plt.scatter(X_embedded[:, 0], X_embedded[:, 1], c=masses, cmap='plasma')
-    plt.show()
+for i in range(n_molecules):
+    filepath1 = '%s/%i.txt' % (dataset, i + 1)
+    mass1 = masses[i]
+    for j in range(i):
+        filepath2 = '%s/%i.txt' % (dataset, j + 1)
+        mass2 = masses[j]
+        output = subprocess.check_output(['../wassms', filepath1, filepath2, '--m', method])
+        distances[i, j] = distances[j, i] = float(re.findall(r"[-+]?\d*\.\d+|\d+", str(output))[0])
+        massdiffs[i, j] = massdiffs[j, i] = abs(mass1 - mass2)
+    print(i)
 
-    """
-    indices = np.triu_indices(massdiffs.shape[0])
-    massdiffs, distances = massdiffs[indices], distances[indices]
-    indices = np.arange(massdiffs.shape[0])
-    np.random.shuffle(indices)
-    indices = indices[:1000]
-    plt.scatter(massdiffs[indices], distances[indices])
-    plt.xlabel('Absolute difference in mass')
-    plt.ylabel('First Wasserstein distance')
-    plt.title('Measuring the distance between molecules')
-    plt.show()
-    """
+with open(out_filename, 'wb') as f:
+    pickle.dump((distances, massdiffs), f)

@@ -43,8 +43,11 @@ params parseCLA(int argc, char *argv[]) {
                 pars.method = Similarities::EUCLIDEAN;
             } else if (strcmp(argv[i], "J") == 0) {
                 pars.method = Similarities::JACCARD_SCORE;
-            } else {
+            } else if (strcmp(argv[i], "J") == 0) {
                 pars.method = Similarities::WASSERSTEIN;
+            } else {
+                std::cout << "Error. Unknown method '" << pars.method;
+                std::cout << "'." << std::endl;
             }
         } else if (strcmp(argv[i], "--r") == 0) {
             pars.resolution = atof(argv[++i]);
