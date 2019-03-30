@@ -1,5 +1,6 @@
 *.pkl
 
+results/
 dataset1/
 dataset2/
 MassBank-data-master/

@@ -6,7 +6,7 @@ import numpy as np
 import subprocess
 
 
-METRIC = 'RJ'
+METRIC = 'E'
 
 if METRIC == 'E':
     out_filename, dataset, method = 'euclidean1', 'dataset1', 'E'
@@ -18,7 +18,7 @@ elif METRIC == 'RE':
     out_filename, dataset, method = 'euclidean2', 'dataset2', 'E'
 elif METRIC == 'RW':
     out_filename, dataset, method = 'wasserstein2', 'dataset2', 'W'
-elif METRIC == 'RJ':
+elif METRIC == 'J2':
     out_filename, dataset, method = 'jaccard2', 'dataset2', 'J'
 n_molecules = 619 if dataset == 'dataset1' else 462
 
@@ -46,7 +46,10 @@ for i in range(n_molecules):
         filepath2 = '%s/%i.txt' % (dataset, j + 1)
         mass2 = masses[j]
         output = subprocess.check_output(['../wassms', filepath1, filepath2, '--m', method])
-        distances[i, j] = distances[j, i] = float(re.findall(r"[-+]?\d*\.\d+|\d+", str(output))[0])
+        distance = float(re.findall(r"[-+]?\d*\.\d+|\d+", str(output))[0])
+        if 'R' in METRIC:
+            distance /= (mass1 * mass2)
+        distances[i, j] = distances[j, i] = distance
         massdiffs[i, j] = massdiffs[j, i] = abs(mass1 - mass2)
     print(i)
 
