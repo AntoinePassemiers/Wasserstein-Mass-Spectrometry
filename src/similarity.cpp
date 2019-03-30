@@ -11,7 +11,8 @@
 namespace wassersteinms {
 
 double wassersteinDistance(Spectrum &S1, Spectrum &S2) {
-    Spectrum N(S1), M(S2);
+    Spectrum N = S1.normalize();
+    Spectrum M = S2.normalize();
     auto i = N.begin(), j = M.begin();
     double distance = 0.0;
     while ((i != N.end()) && (j != M.end())) {
@@ -30,9 +31,8 @@ double wassersteinDistance(Spectrum &S1, Spectrum &S2) {
 
 
 double euclideanDistance(Spectrum &S1, Spectrum &S2, double resolution) {
-    // TODO: normalize with (x - x_min) / (x_max - x_min)
-    Spectrum N = S1.normalize().changeResolution(resolution);
-    Spectrum M = S2.normalize().changeResolution(resolution);
+    Spectrum N = S1.changeResolution(resolution).scale();
+    Spectrum M = S2.changeResolution(resolution).scale();
     auto i = N.begin(), j = M.begin();
     double distance = 0.0;
     while ((i != N.end()) && (j != M.end())) {
@@ -50,9 +50,8 @@ double euclideanDistance(Spectrum &S1, Spectrum &S2, double resolution) {
 
 
 double jaccardScore(Spectrum &S1, Spectrum &S2, double resolution, double eps) {
-    // TODO: normalize with (x - x_min) / (x_max - x_min)
-    Spectrum N = S1.changeResolution(resolution);
-    Spectrum M = S2.changeResolution(resolution);
+    Spectrum N = S1.changeResolution(resolution).scale();
+    Spectrum M = S2.changeResolution(resolution).scale();
     auto i = N.begin(), j = M.begin();
     unsigned int nPeaks = 0, nMatchingPeaks = 0;
     while ((i != N.end()) && (j != M.end())) {

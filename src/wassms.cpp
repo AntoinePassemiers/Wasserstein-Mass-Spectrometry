@@ -19,10 +19,20 @@
 using namespace wassersteinms;
 
 typedef struct _params {
+
+    // Location of the text file containing mass spectrum 1
     char *filepath1      = nullptr;
+
+    // Location of the text file containing mass spectrum 2
     char *filepath2      = nullptr;
+
+    // Dissimilarity measure to use
     Similarities method  = Similarities::WASSERSTEIN;
+
+    // Resolution to use for identifying matching peaks
     double resolution    = 0.02;
+
+    // Presence of an error in command arguments
     bool has_parse_error = 0;
 } params;
 
@@ -75,8 +85,6 @@ int main(int argc, char *argv[]) {
     Spectrum spectrum2 = loadRecord(pars.filepath2);
 
     if (pars.method == Similarities::WASSERSTEIN) {
-        spectrum1 = spectrum1.normalize();
-        spectrum2 = spectrum2.normalize();
         std::cout << "Wasserstein distance: ";
         std::cout << wassersteinDistance(spectrum1, spectrum2) << std::endl;
     } else if (pars.method == Similarities::EUCLIDEAN) {
