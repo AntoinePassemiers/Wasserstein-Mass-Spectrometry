@@ -159,7 +159,7 @@ std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
 
     // Find initial solution
     std::unique_ptr<IpmSolution> sol = createInitialSolution(prob);
-    assert(isFeasible(sol, prob, 1e-5)); // TODO
+    //assert(isFeasible(sol, prob, 1e-5)); // TODO
 
     LDUDecomposition sigmaDecomposition(prob->n, prob->k);
 

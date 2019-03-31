@@ -4,7 +4,6 @@
 *.lib
 *.so
 *.exe
-*.py
 *.pyc
 
 FIO00010.txt
