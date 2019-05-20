@@ -4,8 +4,22 @@ CC = g++
 CHECK = -Winline -Wall
 PAR = -lm -std=c++17
 CXXFLAGS = $(CHECK) $(PAR)
+RELEASEFLAGS = -O3 -fopenmp -DNDEBUG
 WASSMS_LDFLAGS = -L. -lwassms
-DECONVMS_LDFLAGS = -L. -ldeconvms 
+DECONVMS_LDFLAGS = -L. -ldeconvms
+
+ifeq ($(OS),Windows_NT)
+    CXXFLAGS += -D WIN32
+else
+    UNAME_S := $(shell uname -s)
+    ifeq ($(UNAME_S),Linux)
+        CXXFLAGS += -D LINUX
+    endif
+    ifeq ($(UNAME_S),Darwin)
+        CXXFLAGS += -D OSX
+        RELEASEFLAGS += -Wa,-q # Assemble AVX/FMA instructions
+    endif
+endif
 
 .PHONY: all vectorized release debug clean
 
@@ -17,7 +31,7 @@ wassms: buildLibwassms wassms.o
 deconvms: buildLibdeconvms deconvms.o
 	$(CC) -o ../$@ deconvms.o $(CXXFLAGS) $(DECONVMS_LDFLAGS)
 
-release: CXXFLAGS += -O3
+release: CXXFLAGS += $(RELEASEFLAGS)
 release: clean wassms deconvms
 
 debug: CXXFLAGS += -g -O0
