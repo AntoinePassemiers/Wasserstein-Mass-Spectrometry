@@ -37,13 +37,17 @@ typedef struct _params {
     // The algorithm will stop if the norm of primal residuals
     // and the norm of dual residuals both fall below this
     // threshold epsilon.
-    float epsilon;
+    float epsilon = 1e-5;
+
+    // Spectra resolution (may affect performance)
+    double resolution = 0.01;
 
     // Maximum number of iterations of the interior-point method
-    size_t nMaxIterations;
+    size_t nMaxIterations = 10;
 
-    // Presence of an error in command arguments
-    bool hasParseError;
+    // Presence of an error in command arguments.
+    // By default, there is no error.
+    bool hasParseError = 0;
 } params;
 
 
@@ -71,7 +75,6 @@ params displayParseError(params pars) {
 */
 params parseCLA(int argc, char *argv[]) {
     params pars;
-    memset(&pars, 0x00, sizeof(params));
     if (argc < 4) return displayParseError(pars);
 
     // Mandatory arguments
@@ -86,7 +89,9 @@ params parseCLA(int argc, char *argv[]) {
             pars.epsilon = atof(argv[++i]);
         } else if (strcmp(argv[i], "--niter") == 0) {
     	    pars.nMaxIterations = atof(argv[++i]);
-    	}
+    	} else if (strcmp(argv[i], "--res") == 0) {
+            pars.resolution = atof(argv[++i]);
+        }
     }
     return pars;
 }
@@ -99,7 +104,9 @@ int main(int argc, char *argv[]) {
     if (pars.hasParseError) return 1;
 
     // Load empirical spectrum from text file
-    Spectrum mixture = loadRecord(pars.filepath1).normalize();
+    Spectrum mixture = loadRecord(pars.filepath1) \
+        .changeResolution(pars.resolution) \
+        .normalize();
 
     // Load theoretical spectra from text files
     std::vector<Spectrum> theoreticalSpectra;
@@ -114,7 +121,10 @@ int main(int argc, char *argv[]) {
             std::stringstream ss;
             ss << pars.folder << "/" << filename;
             std::string filepath = ss.str();
-            Spectrum spectrum = loadRecord(filepath).normalize();
+            std::cout << filepath << std::endl;
+            Spectrum spectrum = loadRecord(filepath) \
+                .changeResolution(pars.resolution) \
+                .normalize();
             theoreticalSpectra.push_back(spectrum);
 
             // Adds to empirical spectrum bins that are present only 

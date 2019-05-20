@@ -13,6 +13,9 @@ namespace wassersteinms {
 // Load a mass spectrum from text file
 Spectrum loadRecord(const std::string filepath) {
     std::ifstream recordFile(filepath);
+    if (recordFile.fail()) {
+        // TODO: throw error
+    }
     Spectrum spectrum;
     std::string line;
     while (std::getline(recordFile, line)) {
@@ -25,6 +28,7 @@ Spectrum loadRecord(const std::string filepath) {
             spectrum[mz] = intensity;
         }
     }
+    std::cout << "Size: " << spectrum.size() << std::endl;
     return spectrum;
 }
 

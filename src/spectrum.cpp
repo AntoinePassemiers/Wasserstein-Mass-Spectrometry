@@ -22,6 +22,7 @@ Spectrum Spectrum::changeResolution(const double resolution) {
             newSpectrum[roundedKey] = value;
         }
     }
+    std::cout << "Old: " << this->size() << " | New: " << newSpectrum.size() << std::endl;
     return newSpectrum;
 }
 
