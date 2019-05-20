@@ -49,13 +49,23 @@ class Spectrum:
             self.data = data
         self.resolution = resolution
 
+    def keys(self):
+        return np.asarray(list(sorted(self.data.keys())))
+
+    def values(self):
+        return np.asarray([self.data[mz] for mz in sorted(self.data.keys())])
+
     def __iadd__(self, other):
-        self.formulas.union(other.formulas)
-        for key in other.data:
-            if not key in self.data.keys():
-                self.data[key] = other.data[key]
-            else:
-                self.data[key] += other.data[key]
+        if type(other) in [int, float]:
+            for key in self.data.keys():
+                self.data[key] += other
+        else:
+            self.formulas.union(other.formulas)
+            for key in other.data.keys():
+                if not (key in self.data.keys()):
+                    self.data[key] = other.data[key]
+                else:
+                    self.data[key] += other.data[key]
         return self
 
     def __add__(self, other):
@@ -66,7 +76,7 @@ class Spectrum:
 
     def __imul__(self, other):
         assert(type(other) in [int, float])
-        for key in self.data:
+        for key in self.data.keys():
             self.data[key] *= other
         return self
 
@@ -134,7 +144,7 @@ def create_msd_folder(root, folder_name, mus, nu):
     # Save theoretical spectra
     os.makedirs(os.path.join(folder_path, 'molecules'))
     for mu in mus:
-        nu.save(os.path.join(folder_path, 'molecules', '%s.txt' % mu.name()))
+        mu.save(os.path.join(folder_path, 'molecules', '%s.txt' % mu.name()))
 
 
 
@@ -144,7 +154,15 @@ if __name__ == '__main__':
     mus = list()
     mus.append(Spectrum.random(30000))
     mus.append(Spectrum.random(30000))
-    nu = 0.8 * mus[0] + 0.2 * mus[1]
+
+    plt.plot(mus[0].keys(), mus[0].values(), label=list(mus[0].formulas)[0])
+    plt.plot(mus[1].keys(), mus[1].values(), label=list(mus[1].formulas)[0])
+    alpha = .8
+    nu = alpha * mus[0] + (1. - alpha) * mus[1]
+    plt.plot(nu.keys(), nu.values(), label='mixture')
+    plt.legend()
+    plt.show()
+
     create_msd_folder('msd', 'test1', mus, nu)
 
     """
