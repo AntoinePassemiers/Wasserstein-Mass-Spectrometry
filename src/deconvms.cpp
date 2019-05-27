@@ -17,6 +17,7 @@
 #include "spectrum.hpp"
 #include "io.hpp"
 #include "ipm.hpp"
+#include "heuristic.hpp"
 
 using namespace wassersteinms;
 
@@ -148,10 +149,10 @@ int main(int argc, char *argv[]) {
     std::unique_ptr<ProblemInstance> problemInstance = formulateProblem(theoreticalSpectra, mixture);
     size_t k = problemInstance->k;
 
-    // Solve deconvolution problem with an interior-point method
-    std::unique_ptr<IpmSolution> sol = mehrotraPredictorCorrectorMethod(
+    // Solve deconvolution problem
+    std::cout << "Running genetic algorithm for " << pars.nMaxIterations << " iteration(s)..." << std::endl;
+    Eigen::VectorXd p = geneticAlgorithm(
 		    problemInstance, pars.epsilon, pars.nMaxIterations);
-    Eigen::VectorXd p = sol->y.tail(k);
     for (size_t i = 0; i < k; i++) {
         std::cout << "Weight of isotopic enveloppe " << i+1 << ": " << p[i] << std::endl;
     }
