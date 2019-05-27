@@ -11,7 +11,7 @@
 namespace wassersteinms {
 
 double findPositivityConstrainedStepLength(
-        Eigen::VectorXd &x, Eigen::VectorXd &dx, double alpha0) {
+        const Eigen::VectorXd &x, const Eigen::VectorXd &dx, double alpha0) {
     // x_i + alpha * dx_i >= 0
     //     alpha >= -x_i / dx_i     if dx_i > 0 and x_i >= 0 -> ok since alpha >= 0
     //     alpha <  -x_i / dx_i     if dx_i < 0 and x_i >= 0
@@ -62,7 +62,7 @@ bool satisfiesKKTConditions(
 
 
 std::unique_ptr<ProblemInstance> formulateProblem(
-        std::vector<Spectrum> &mu, Spectrum &nu) {
+        const std::vector<Spectrum> &mu, const Spectrum &nu) {
 
     size_t k = mu.size(), n = nu.size();
     ProblemInstance *prob = new ProblemInstance(n, k);
@@ -168,7 +168,7 @@ std::unique_ptr<IpmSolution> longStepPathFollowingMethod(
     Eigen::MatrixXd A = prob->A;
     Eigen::VectorXd &x = sol->x, &y = sol->y, &z = sol->z;
 
-    double muOld = 1e+5;
+    double muOld = 1.0;
     double sigmaMin = 0.005;
     double sigmaMax = 0.9;
     double sigma = 0.005;
@@ -277,11 +277,8 @@ std::unique_ptr<IpmSolution> mehrotraPredictorCorrectorMethod(
         sigmaDecomposition.factorize(A, zinvx);
     	Eigen::VectorXd r = b + A * zinvx.cwiseProduct(rd);
     	Eigen::VectorXd dyAff = sigmaDecomposition.solve(r);
-    	//dyAff = nantonumVec(dyAff);
     	Eigen::VectorXd dzAff = rd - A.transpose() * dyAff;
-    	//dzAff = nantonumVec(dzAff);
     	Eigen::VectorXd dxAff = -x - zinvx.cwiseProduct(dzAff);
-    	//dxAff = nantonumVec(dxAff);
 
         // Choose step lengths while satisfying positivity constraints:
         // Choose alphaP such that new x is positive
@@ -311,20 +308,23 @@ std::unique_ptr<IpmSolution> mehrotraPredictorCorrectorMethod(
     	Eigen::VectorXd dz = rd - A.transpose() * dy;
     	Eigen::VectorXd dx = -x - zinvx.cwiseProduct(dz) + zinv.cwiseProduct(sigma * mu * _1 - correction);
 
-        alphaP = findPositivityConstrainedStepLength(x, dx, 1.0);
-        alphaD = findPositivityConstrainedStepLength(z, dz, 1.0);
-        double eta = std::max(0.995, 1.0 - mu);
-        alphaP = std::min(1.0, eta * alphaP);
-        alphaD = std::min(1.0, eta * alphaD);
+        double theta = 0.95;
+        alphaP = findPositivityConstrainedStepLength(x, dx, 1.0 / theta);
+        alphaD = findPositivityConstrainedStepLength(z, dz, 1.0 / theta);
+        alphaP = std::min(1.0, theta * alphaP);
+        alphaD = std::min(1.0, theta * alphaD);
 
         std::cout << "\talphaP: " << alphaP << " - alphaD: " << alphaD << " - sigma: ";
         std::cout << sigma << "\n" << std::endl;
 
+        std::cout << y.tail(prob->k) << std::endl;
+
         // Update solution
+        double thresh = 1e-20;
         x += alphaP * dx;
-        x = nantonumVec((x.array() < 1e-20).select(1e-20, x));
+        x = nantonumVec((x.array() < thresh).select(thresh, x));
         z += alphaD * dz;
-        z = nantonumVec((z.array() < 1e-20).select(1e-20, z));
+        z = nantonumVec((z.array() < thresh).select(thresh, z));
         y += alphaD * dy;
         //y = nantonumVec(y);
     }

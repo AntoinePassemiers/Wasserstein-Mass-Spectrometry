@@ -37,7 +37,7 @@ typedef struct _params {
     // The algorithm will stop if the norm of primal residuals
     // and the norm of dual residuals both fall below this
     // threshold epsilon.
-    float epsilon = 1e-5;
+    float epsilon = 1e-10;
 
     // Spectra resolution (may affect performance)
     double resolution = 0.01;
@@ -149,7 +149,7 @@ int main(int argc, char *argv[]) {
     size_t k = problemInstance->k;
 
     // Solve deconvolution problem with an interior-point method
-    std::unique_ptr<IpmSolution> sol = longStepPathFollowingMethod(
+    std::unique_ptr<IpmSolution> sol = mehrotraPredictorCorrectorMethod(
 		    problemInstance, pars.epsilon, pars.nMaxIterations);
     Eigen::VectorXd p = sol->y.tail(k);
     for (size_t i = 0; i < k; i++) {

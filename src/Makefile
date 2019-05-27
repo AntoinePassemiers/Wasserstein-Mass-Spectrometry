@@ -41,7 +41,7 @@ debug: clean wassms deconvms
 buildLibwassms: spectrum.o similarity.o io.o
 	ar r libwassms.a *.o
 
-buildLibdeconvms: spectrum.o io.o ipm.o ldu.o
+buildLibdeconvms: spectrum.o io.o ipm.o ldu.o solver/solver.o
 	ar r libdeconvms.a *.o
 
 # Compile source files
@@ -65,6 +65,9 @@ ipm.o: ipm.cpp ipm.hpp
 
 ldu.o: ldu.cpp ldu.hpp
 	$(CC) $(CXXFLAGS) -c ldu.cpp -I$(EIGEN_PATH)
+
+solver/solver.o: solver/solver.cpp solver/solver.hpp
+	$(CC) $(CXXFLAGS) -c solver/solver.cpp -I$(EIGEN_PATH)
 
 # Clean command
 clean:

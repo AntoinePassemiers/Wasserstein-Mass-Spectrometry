@@ -90,8 +90,8 @@ typedef struct _problemInstance {
         non-negativity constraints
 */
 double findPositivityConstrainedStepLength(
-        Eigen::VectorXd &x,
-        Eigen::VectorXd &dx,
+        const Eigen::VectorXd &x,
+        const Eigen::VectorXd &dx,
         double alpha0);
 
 /**
@@ -155,8 +155,8 @@ bool satisfiesKKTConditions(
     @param nu Empirical spectrum
 */
 std::unique_ptr<ProblemInstance> formulateProblem(
-        std::vector<Spectrum> &mu,
-        Spectrum &nu);
+        const std::vector<Spectrum> &mu,
+        const Spectrum &nu);
 
 /**
     Creates an initial primal-dual feasible solution

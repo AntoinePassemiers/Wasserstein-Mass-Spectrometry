@@ -1,1 +1,1 @@
-deconvms data/msd/test1/mixture.txt data/msd/test1/molecule_list.txt data/msd/test1/molecules --niter 50
+deconvms data/msd/example/mixture.txt data/msd/example/molecule_list.txt data/msd/example/molecules --niter 50
