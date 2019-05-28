@@ -105,9 +105,7 @@ int main(int argc, char *argv[]) {
     if (pars.hasParseError) return 1;
 
     // Load empirical spectrum from text file
-    Spectrum mixture = loadRecord(pars.filepath1) \
-        .changeResolution(pars.resolution) \
-        .normalize();
+    Spectrum mixture = loadRecord(pars.filepath1).normalize();
 
     // Load theoretical spectra from text files
     std::vector<Spectrum> theoreticalSpectra;
@@ -123,9 +121,7 @@ int main(int argc, char *argv[]) {
             ss << pars.folder << "/" << filename;
             std::string filepath = ss.str();
             std::cout << filepath << std::endl;
-            Spectrum spectrum = loadRecord(filepath) \
-                .changeResolution(pars.resolution) \
-                .normalize();
+            Spectrum spectrum = loadRecord(filepath).normalize();
             theoreticalSpectra.push_back(spectrum);
 
             // Adds to empirical spectrum bins that are present only 

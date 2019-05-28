@@ -14,7 +14,7 @@ namespace wassersteinms {
 Spectrum loadRecord(const std::string filepath) {
     std::ifstream recordFile(filepath);
     if (recordFile.fail()) {
-        // TODO: throw error
+        throw "Could not locate file " + filepath;
     }
     Spectrum spectrum;
     std::string line;
@@ -28,7 +28,6 @@ Spectrum loadRecord(const std::string filepath) {
             spectrum[mz] = intensity;
         }
     }
-    std::cout << "Size: " << spectrum.size() << std::endl;
     return spectrum;
 }
 

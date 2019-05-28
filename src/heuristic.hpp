@@ -16,6 +16,7 @@
 #include <memory>
 #include <random>
 #include <functional>
+#include <vector>
 #include <math.h>
 #include <Eigen/Core>
 #include <Eigen/Dense>
@@ -24,9 +25,23 @@
 
 namespace wassersteinms {
 
+int argmin(const Eigen::VectorXd &v);
+
+int argmin(const Eigen::VectorXd &v, const Eigen::VectorXi &indices);
+
+int argmax(const Eigen::VectorXd &v);
+
 void applyCorrection(Eigen::VectorXd &p);
 
-double wassersteinDistance(Eigen::VectorXd &p,
+Eigen::VectorXd randomSolution(size_t k);
+
+void mutationOperator(Eigen::VectorXd &p);
+
+void crossoverOperator(const Eigen::VectorXd &a,
+                       const Eigen::VectorXd &b,
+                       Eigen::VectorXd &c);
+
+double wassersteinDistance(const Eigen::VectorXd &p,
                            std::unique_ptr<ProblemInstance> &prob);
 
 Eigen::VectorXd geneticAlgorithm(

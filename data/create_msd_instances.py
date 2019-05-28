@@ -147,6 +147,26 @@ def create_msd_folder(root, folder_name, mus, nu):
         mu.save(os.path.join(folder_path, 'molecules', '%s.txt' % mu.name()))
 
 
+def formula_to_latex(formula):
+    latex = '$' + formula[0]
+    for i in range(1, len(formula)):
+        c_old = formula[i-1]
+        c = formula[i]
+        if c.isdigit():
+            if not c_old.isdigit():
+                latex = latex + '_{' + c
+            else:
+                latex = latex + c
+        else:
+            if c_old.isdigit():
+                latex = latex + '} ' + c
+            else:
+                latex = latex + c
+    if formula[-1].isdigit():
+        latex = latex + '}'
+    latex = latex + '$'
+    return latex
+
 
 if __name__ == '__main__':
 
@@ -155,15 +175,36 @@ if __name__ == '__main__':
     mus.append(Spectrum.random(30000))
     mus.append(Spectrum.random(30000))
 
-    plt.plot(mus[0].keys(), mus[0].values(), label=list(mus[0].formulas)[0])
-    plt.plot(mus[1].keys(), mus[1].values(), label=list(mus[1].formulas)[0])
+    plt.plot(mus[0].keys(), mus[0].values(),
+        label=formula_to_latex(list(mus[0].formulas)[0]),
+        color='orangered')
+    plt.plot(mus[1].keys(), mus[1].values(),
+        label=formula_to_latex(list(mus[1].formulas)[0]),
+        color='purple')
     alpha = .8
     nu = alpha * mus[0] + (1. - alpha) * mus[1]
-    plt.plot(nu.keys(), nu.values(), label='mixture')
+    plt.plot(nu.keys(), nu.values(),
+        label='Mixture',
+        color='blue')
+    plt.ylabel('Probability density function')
+    plt.xlabel('m/z ratio')
     plt.legend()
+    plt.savefig('imgs/deconv.png', format='png', dpi=500)
+    plt.clf()
+    plt.plot(mus[0].keys(), mus[0].values(),
+        label=formula_to_latex(list(mus[0].formulas)[0]),
+        color='orangered', linewidth=4)
+    plt.plot(mus[1].keys(), mus[1].values(),
+        label=formula_to_latex(list(mus[1].formulas)[0]),
+        color='purple', linewidth=4)
+    plt.plot(nu.keys(), nu.values(),
+        label='Mixture',
+        color='blue', linewidth=4)
+    plt.ylabel('Probability density function')
+    plt.xlabel('m/z ratio')
     plt.show()
 
-    create_msd_folder('msd', 'test1', mus, nu)
+    create_msd_folder('msd', 'test3', mus, nu)
 
     """
     mus = list()
