@@ -45,17 +45,17 @@ void applyCorrection(Eigen::VectorXd &p) {
 
 Eigen::VectorXd randomSolution(size_t k) {
     Eigen::VectorXd p = Eigen::VectorXd::Random(k);
+    // Each component is set to 0 with a 50% chance
+    Eigen::VectorXd _0 = Eigen::VectorXd::Zero(k);
+    p = (p.array() < 0.0).select(_0, p);
     applyCorrection(p);
     return p;
 }
 
 void mutationOperator(Eigen::VectorXd &p) {
-    double mutation = 0.005;
-    double epsilon = 0.3;
-    Eigen::VectorXd _1 = Eigen::VectorXd::Ones(p.size());
-    Eigen::VectorXd u = (
-        Eigen::VectorXd::Random(p.size()) + _1);
-    p = (u.array() < epsilon * 2.0).select(p + _1 * mutation, p);
+    Eigen::VectorXd rand = Eigen::VectorXd::Random(p.size());
+    double mutation = 2.0 * rand[0] / p.size();
+    p[argmax(rand)] += mutation;
     applyCorrection(p);
 }
 
@@ -78,8 +78,8 @@ Eigen::VectorXd geneticAlgorithm(
         size_t nMaxIterations) {
 
     // Create initial population
-    int populationSize = 50;
-    int partitionSize = 10;
+    int populationSize = 1000;
+    int partitionSize = 50;
     assert(partitionSize * 2 <= populationSize);
     Eigen::VectorXd distances = Eigen::VectorXd::Ones(populationSize);
     std::vector<Eigen::VectorXd> population;
@@ -93,9 +93,9 @@ Eigen::VectorXd geneticAlgorithm(
     Eigen::VectorXd bestP = population[i];
     double bestDistance = distances[i];
     Eigen::VectorXi indices = Eigen::VectorXi::Ones(populationSize);
-    for (int i = 0; i < populationSize; i++) indices[i] = i;
+    for (size_t i = 0; i < populationSize; i++) indices[i] = i;
 
-    for (int j = 0; j < nMaxIterations; j++) {
+    for (size_t j = 0; j < nMaxIterations; j++) {
 
         // Shuffle the population and find two parents
         std::random_shuffle(

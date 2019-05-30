@@ -82,7 +82,6 @@ params parseCLA(int argc, char *argv[]) {
     pars.filepath1 = argv[1];
     pars.filepath2 = argv[2];
     pars.folder = argv[3];
-    pars.nMaxIterations = 10; // Default number of iterations
 
     // Optional arguments
     for (int i = 3; i < argc; i++) {
@@ -105,7 +104,9 @@ int main(int argc, char *argv[]) {
     if (pars.hasParseError) return 1;
 
     // Load empirical spectrum from text file
-    Spectrum mixture = loadRecord(pars.filepath1).normalize();
+    Spectrum mixture = loadRecord(pars.filepath1) \
+            .changeResolution(pars.resolution) \
+            .normalize();
 
     // Load theoretical spectra from text files
     std::vector<Spectrum> theoreticalSpectra;
@@ -120,8 +121,9 @@ int main(int argc, char *argv[]) {
             std::stringstream ss;
             ss << pars.folder << "/" << filename;
             std::string filepath = ss.str();
-            std::cout << filepath << std::endl;
-            Spectrum spectrum = loadRecord(filepath).normalize();
+            Spectrum spectrum = loadRecord(filepath) \
+                    .changeResolution(pars.resolution) \
+                    .normalize();
             theoreticalSpectra.push_back(spectrum);
 
             // Adds to empirical spectrum bins that are present only 
@@ -137,7 +139,6 @@ int main(int argc, char *argv[]) {
     for (auto it = theoreticalSpectra.begin(); it != theoreticalSpectra.end(); it++) {
         Spectrum &spectrum = *it;
         spectrum.addKeys(mixture);
-        std::cout << mixture.size() << ", " << spectrum.size() << std::endl;
         assert(mixture.size() == spectrum.size());
     }
     

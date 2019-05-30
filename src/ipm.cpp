@@ -110,13 +110,13 @@ std::unique_ptr<ProblemInstance> formulateProblem(
     A.block(n-1, 2*n, k, k) = -Eigen::MatrixXd::Identity(k, k);
 
     // Check rank of A
-    Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(A);
-    int rank = luDecomposition.rank();
-    if (rank != A.rows()) {
-        std::cout << "[Warning] A is of shape (" << A.rows() << ", " << A.cols() << ")";
-        std::cout << " and rank " << rank << std::endl;
-        std::cout << "[Warning] A is not a full-rank matrix" << std::endl;
-    }
+    //Eigen::FullPivLU<Eigen::MatrixXd> luDecomposition(A);
+    //int rank = luDecomposition.rank();
+    //if (rank != A.rows()) {
+    //    std::cout << "[Warning] A is of shape (" << A.rows() << ", " << A.cols() << ")";
+    //    std::cout << " and rank " << rank << std::endl;
+    //    std::cout << "[Warning] A is not a full-rank matrix" << std::endl;
+    //}
 
     return std::unique_ptr<ProblemInstance>(prob);
 }

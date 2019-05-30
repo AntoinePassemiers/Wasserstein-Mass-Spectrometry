@@ -1,6 +1,50 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
+import seaborn as sns
+import pandas as pd
 
+
+# Test 1
+rmsd = [0.0012505836509091287, 0.0024095533356010136, 0.017385010620619736, 0.01257405824059044, 0.028453115371330863, 0.035835480014796056, 0.030618692905577977, 0.031755880413507284, 0.048177519281442746, 0.03632804633503395, 0.04090987013812029, 0.039471145802900856, 0.045677560894964844, 0.03410586363932699, 0.04089466120440578, 0.035840279968471875]
+xs = np.arange(2, 18)
+sns.set(style="darkgrid")
+plt.plot(xs, rmsd, label='RMSD')
+rmsd = [0] * 16
+plt.plot(xs, rmsd, label='Reported RMSD')
+plt.legend()
+plt.ylabel('Root-mean-square-deviation')
+plt.xlabel('Number of molecules')
+plt.show()
+
+# Test 1 bis
+rmsd = [0.005200588744259063, 0.008627729385373987, 0.019325604327202737, 0.04533256051270444,
+    0.023809663818259635, 0.029584728269324057, 0.03348678646696335, 0.04499616048565156, 0.0346250662350847, 0.043626945964781026, 0.0398922560485548, 0.03625728468366385, 0.05268852483457713, 0.04999633331946593, 0.03527708540825035, 0.04045764573105576]
+xs = np.arange(2, 18)
+sns.set(style="darkgrid")
+plt.plot(xs, rmsd, label='RMSD')
+rmsd = [0.001, 0.0018, 0.0020, 0.0025, 0.003, 0.0033, 0.006, 0.0078, 0.0082, 0.01, 0.012, 0.016, 0.018, 0.024, 0.03, 0.036]
+plt.plot(xs, rmsd, label='Reported RMSD')
+plt.legend()
+plt.ylabel('Root-mean-square-deviation')
+plt.xlabel('Number of molecules')
+plt.show()
+
+# Test 3
+rmsd = [0.013379590476169281, 0.004821449784297262, 0.06245961688563259, 0.11179491642624005, 0.15831391714012383, 0.2118201687422612, 0.27753762200555804, 0.28789018605999755, 0.26049415690261174, 0.2871428298916586, 0.28394130522312616, 0.27229116857386787, 0.2973958371929952, 0.3096221375472247, 0.28391498902594503, 0.29916335273860417, 0.08606142517121129, 0.31752952641713494, 0.28408314975957744, 0.1107945921220887, 0.2784232990566882, 0.2834396389072813, 0.14961539167853855, 0.29681986171218816, 0.07923184273541793, 0.27964230161655174, 0.3073861574505308, 0.28752394851665836, 0.305821114468201, 0.1971774972201443]
+std = [0.0018019119751821406, 0.03536506406937345, 0.004796475576594152, 0.0012596235828675189, 0.0026333229503999155, 0.006274469929632015, 0.022250642241213935, 0.003389974031094897, 0.015175280249599745, 0.001379684099429662, 0.0065264008689633534, 0.002146502305376491, 0.006558868696785028, 0.005079882271894627, 0.007000492862622972, 0.003912078773044114, 0.010533519324107787, 0.006056399424694023, 0.0031825385191852403, 0.0011305627121502811, 0.008306719449203288, 0.010003933657468081, 0.012834190544537534, 0.0016596905181948624, 0.012264766411795849, 0.006014484744877763, 0.0032771974968096498, 0.0056760462234117124, 0.006848343798563406, 0.006841448789199112]
+xs = np.arange(1, 31)
+sns.set(style="darkgrid")
+plt.plot(xs, rmsd, label='RMSD')
+rmsd = [0.005, 0.006, 0.04, 0.11, 0.16, 0.19, 0.2, 0.22, 0.23, 0.26, 0.29, 0.3, 0.31, 0.33, 0.345, 0.36, 0.38, 0.4, 0.405, 0.41, 0.418, 0.426, 0.432, 0.44, 0.45, 0.475, 0.51, 0.515, 0.51, 0.52]
+plt.plot(xs, rmsd, label='Reported RMSD')
+plt.legend()
+plt.ylabel('Root-mean-square-deviation')
+plt.xlabel('Charge')
+plt.show()
+
+
+import sys; sys.exit(0)
 
 mixture = np.asarray([
     [43.99, 0.001433],
@@ -108,8 +152,24 @@ acetic_acid[:, 1] /= acetic_acid[:, 1].max()
 ethanol[:, 1] /= ethanol[:, 1].max()
 propane[:, 1] /= propane[:, 1].max()
 
-plt.plot(mixture[:, 0], mixture[:, 1], label='Mixture')
-plt.plot(acetic_acid[:, 0], acetic_acid[:, 1], label='Acetic acid')
-plt.plot(ethanol[:, 0], ethanol[:, 1], label='Ethanol')
-plt.plot(propane[:, 0], propane[:, 1], label='Propane')
-plt.show()
+width = 0.1
+fig = plt.figure()
+gs = gridspec.GridSpec(2, 1, height_ratios=[1, 1])
+
+ax1 = plt.subplot(gs[0])
+ax1.bar(mixture[:, 0], mixture[:, 1],
+    label='Mixture', fc=(1, 0, 0, 0.5), width=width)
+ax1.legend()
+ax1.set_ylabel('Relative peak intensity')
+
+ax2 = plt.subplot(gs[1])
+ax2.bar(acetic_acid[:, 0], acetic_acid[:, 1],
+    label='Acetic acid', fc=(0, 1, 0, 0.5), width=width)
+ax2.bar(ethanol[:, 0], ethanol[:, 1],
+    label='Ethanol', width=width)
+ax2.bar(propane[:, 0], propane[:, 1],
+    label='Propane', width=width)
+ax2.legend()
+ax2.set_xlabel('M/z ratio')
+ax2.set_ylabel('Relative peak intensity')
+plt.savefig('imgs/deconv.png', format='png', dpi=500)
