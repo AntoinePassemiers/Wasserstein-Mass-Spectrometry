@@ -1,1 +1,0 @@
-deconvms data/msd/test3/mixture.txt data/msd/test3/molecule_list.txt data/msd/test3/molecules --niter 5000
