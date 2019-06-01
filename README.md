@@ -26,12 +26,12 @@ deconvms path/to/empirical/spectrum.txt path/to/molecule_list.txt path/to/molecu
 Compute Wasserstein dissimilarity between two mass spectra:
 
 ```
-wassms.exe path/to/first/record/file.txt path/to/second/record/file.txt --m W
+wassms path/to/first/record/file.txt path/to/second/record/file.txt --m W
 ```
 Compute Euclidean distance between two mass spectra:
 
 ```
-wassms.exe path/to/first/record/file.txt path/to/second/record/file.txt --m E
+wassms path/to/first/record/file.txt path/to/second/record/file.txt --m E
 ```
 
 ### Installation
